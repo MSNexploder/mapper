@@ -1,0 +1,652 @@
+<!DOCTYPE html>  <html> <head>   <title>index.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="callbacks.html">                 callbacks.js               </a>                                           <a class="source" href="index.html">                 index.js               </a>                                           <a class="source" href="primary_key.html">                 primary_key.js               </a>                                           <a class="source" href="read.html">                 read.js               </a>                                           <a class="source" href="write.html">                 write.js               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               index.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <p>Module dependencies.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">util</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;util&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">EventEmitter</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;events&#39;</span><span class="p">).</span><span class="nx">EventEmitter</span><span class="p">;</span>
+<span class="kd">var</span> <span class="nx">_</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;underscore&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">nodes</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;../nodes&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">connection_adapters</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;../connection_adapters&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">managers</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;../managers&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">Table</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;../table&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">Relation</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;../relation&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">Associations</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;../associations&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">Persistence</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;../persistence&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">Column</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;../connection_adapters/column&#39;</span><span class="p">);</span>
+
+<span class="kd">var</span> <span class="nx">PrimaryKey</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./primary_key&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">Read</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./read&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">Write</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./write&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">callback</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./callbacks&#39;</span><span class="p">);</span>
+
+<span class="kd">var</span> <span class="nx">validation</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;../validations&#39;</span><span class="p">);</span>
+
+<span class="kd">var</span> <span class="nx">known_models</span> <span class="o">=</span> <span class="p">{};</span>
+<span class="kd">var</span> <span class="nx">ready_count</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="kd">var</span> <span class="nx">configuration</span> <span class="o">=</span> <span class="p">{};</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <h1>mapper.js</h1>
+
+<p>Models are normally defined using the <code>Base.define</code> method. The newly
+created class can be modified by providing a callback function After
+calling the callback function, the actual database table will be created
+or migrated if automatically by mapper.js if needed.</p>
+
+<pre><code>Base.configuration = {adapter: 'mysql', database: 'app'};
+var User = Base.define('users', function() {
+    this.defineColumn('name', 'string');
+    this.defineColumn('occupation', 'string', {default: 'Coder'});
+    this.hasMany('applications');
+});
+</code></pre>
+
+<h2>Creation</h2>
+
+<p>mapper.js accept constructor parameters either in a hash or as a block. The hash
+method is especially useful when you're receiving the data from somewhere else, like an
+HTTP request. It works like this:</p>
+
+<pre><code> user = new User(name: "David", occupation: "Code Artist");
+ user.name; // =&gt; "David"
+</code></pre>
+
+<p>You can also use anonymous function initialization:</p>
+
+<pre><code> user = new User(function() {
+     this.name = "David";
+     this.occupation = "Code Artist";
+ });
+</code></pre>
+
+<p>And of course you can just create a bare object and specify the attributes after the fact:</p>
+
+<pre><code>user = new User();
+user.name = "David";
+user.occupation = "Code Artist";
+</code></pre>
+
+<h2>Conditions</h2>
+
+<p>Conditions can either be specified as a string, array, or hash representing the WHERE-part of an SQL statement.
+The array form is to be used when the condition input is tainted and requires sanitization. The string form can
+be used for statements that don't involve tainted data. The hash form works much like the array form, except
+only equality and range is possible. Examples:</p>
+
+<pre><code>User.prototype.authenticateUnsafely(user_name, password) {
+    return this.where("user_name = '" + user_name + "' AND password = '" + password + "'").first();
+}
+
+User.prototype.authenticateSafely(user_name, password) {
+    return this.where("user_name = ? AND password = ?", [user_name, password]).first();
+}
+
+User.prototype.authenticateSafelySimply(user_name, password) {
+    return this.where({user_name: user_name, password: password}).first();
+}
+</code></pre>
+
+<p>The <code>authenticateUnsafely</code> method inserts the parameters directly into the query
+and is thus susceptible to SQL-injection attacks if the <code>user_name</code> and <code>password</code>
+parameters come directly from an HTTP request. The <code>authenticateSafely</code> and
+<code>authenticateSafelySimply</code> both will sanitize the <code>user_name</code> and <code>password</code>
+before inserting them in the query, which will ensure that an attacker can't escape the
+query and fake the login (or worse).</p>
+
+<p>When using multiple parameters in the conditions, it can easily become hard to read exactly
+what the fourth or fifth question mark is supposed to represent. In those cases, you can
+resort to named bind variables instead. That's done by replacing the question marks with
+symbols and supplying a hash with values for the matching symbol keys:</p>
+
+<pre><code>Company.where("id = :id AND name = :name AND division = :division AND created_at &gt; :accounting_date",
+              {id: 3, name: "37signals", division: "First", accouting_date: '2005-01-01'}).first();
+</code></pre>
+
+<p>Similarly, a simple hash without a statement will generate conditions based on equality with the SQL AND
+operator. For instance:</p>
+
+<pre><code>Student.where(first_name: "Harvey", status: 1);
+Student.where(params['student']);
+</code></pre>
+
+<p>An array may be used in the hash to use the SQL IN operator:</p>
+
+<pre><code>Student.where(grade: [9, 10, 11]);
+</code></pre>
+
+<p>When joining tables, nested hashes or keys written in the form 'table<em>name.column</em>name'
+can be used to qualify the table name of a particular condition. For instance:</p>
+
+<pre><code>Student.joins('schools').where({schools: { type: 'public' }});
+Student.joins('schools').where({'schools.type': 'public'});
+</code></pre>
+
+<h2>Overwriting default accessors</h2>
+
+<p>All column values are automatically available through basic accessors on the mapper.js
+object, but sometimes you want to specialize this behavior. This can be done by overwriting
+the default accessors (using the same name as the attribute) and calling
+<code>readAttribute(attr_name)</code> and <code>writeAttribute(attr_name, value)</code> to actually
+change things.</p>
+
+<pre><code># Uses an integer of seconds to hold the length of the song
+Song.__defineGetter__('length', function() {
+    return readAttribute('length') / 60;
+})
+
+Song.__defineSetter__('length', function(minutes) {
+    return writeAttribute('length', minutes * 60);
+})
+</code></pre>
+
+<h2>Single table inheritance</h2>
+
+<p>mapper.js allows inheritance by storing the name of the class in a column that by
+default is named "type" (can be changed by overwriting <code>Base.inheritance_column</code>).
+This means that an inheritance looking like this:</p>
+
+<pre><code>var Company = mapper.define('companies', {}, function() {
+});
+
+var Firm = mapper.define('firms', {inherits: 'companies'}, function() {
+
+});
+
+var Client = mapper.define('clients', {inherits: 'companies'}, function() {
+
+});
+</code></pre>
+
+<p>When you do <code>Firm.create(name: "37signals");</code>, this record will be saved in
+the companies table with type = "Firm". You can then fetch this row again using
+<code>Company.where(:name =&gt; '37signals').first();</code> and it will return a Firm object.</p>
+
+<p>If you don't have a type column defined in your table, single-table inheritance won't
+be triggered. In that case, it'll work just like normal subclasses with no special magic
+for differentiating between them or reloading the right type with find.</p>
+
+<p>Note, all the attributes for all the cases are kept in the same table. Read more:
+http://www.martinfowler.com/eaaCatalog/singleTableInheritance.html</p>
+
+<h2>Connection to multiple databases in different models</h2>
+
+<p>All classes will use this connection. But you can also set a class-specific connection.
+For example, if Course is an Base, but resides in a different database, you can just
+say <code>Course.connection</code> and Course and all of its subclasses will use this connection instead.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">define</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">class_name</span><span class="p">,</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">new_class</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">attributes</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">_attributes</span> <span class="o">=</span> <span class="p">{};</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">isFunction</span><span class="p">(</span><span class="nx">attributes</span><span class="p">))</span> <span class="p">{</span>
+            <span class="nx">_</span><span class="p">.</span><span class="nx">bind</span><span class="p">(</span><span class="nx">attributes</span><span class="p">,</span> <span class="k">this</span><span class="p">)();</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">_attributes</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">clone</span><span class="p">(</span><span class="nx">attributes</span><span class="p">);</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">constructor</span><span class="p">.</span><span class="nx">finderNeedsTypeCondition</span><span class="p">())</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">[</span><span class="k">this</span><span class="p">.</span><span class="nx">constructor</span><span class="p">.</span><span class="nx">inheritanceColumn</span><span class="p">()]</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">constructor</span><span class="p">.</span><span class="nx">stiName</span><span class="p">();</span>
+        <span class="p">}</span>
+
+        <span class="k">this</span><span class="p">.</span><span class="nx">_destroyed</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">_new_record</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="p">};</span>
+
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">class_name</span> <span class="o">=</span> <span class="nx">class_name</span><span class="p">;</span>
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">configuration</span> <span class="o">=</span> <span class="p">{};</span>
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">_columns</span> <span class="o">=</span> <span class="p">[];</span>
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">_finder_needs_type_condition</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">_type_condition</span> <span class="o">=</span> <span class="kc">undefined</span><span class="p">;</span>
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">_event_emitter</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">EventEmitter</span><span class="p">();</span>
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">reflections</span> <span class="o">=</span> <span class="p">{};</span>
+
+    <span class="nx">known_models</span><span class="p">[</span><span class="nx">class_name</span><span class="p">.</span><span class="nx">toLowerCase</span><span class="p">()]</span> <span class="o">=</span> <span class="nx">new_class</span><span class="p">;</span>
+
+    <span class="nx">util</span><span class="p">.</span><span class="nx">inherits</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">EventEmitter</span><span class="p">);</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>Extend new class with common functionality.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">_</span><span class="p">.</span><span class="nx">extend</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">PrimaryKey</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">extend</span><span class="p">(</span><span class="nx">new_class</span><span class="p">.</span><span class="nx">prototype</span><span class="p">,</span> <span class="nx">PrimaryKey</span><span class="p">.</span><span class="nx">prototype</span><span class="p">);</span>
+
+    <span class="nx">_</span><span class="p">.</span><span class="nx">extend</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">Read</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">extend</span><span class="p">(</span><span class="nx">new_class</span><span class="p">.</span><span class="nx">prototype</span><span class="p">,</span> <span class="nx">Read</span><span class="p">.</span><span class="nx">prototype</span><span class="p">);</span>
+
+    <span class="nx">_</span><span class="p">.</span><span class="nx">extend</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">Write</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">extend</span><span class="p">(</span><span class="nx">new_class</span><span class="p">.</span><span class="nx">prototype</span><span class="p">,</span> <span class="nx">Write</span><span class="p">.</span><span class="nx">prototype</span><span class="p">);</span>
+
+    <span class="nx">_</span><span class="p">.</span><span class="nx">extend</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">Persistence</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">extend</span><span class="p">(</span><span class="nx">new_class</span><span class="p">.</span><span class="nx">prototype</span><span class="p">,</span> <span class="nx">Persistence</span><span class="p">.</span><span class="nx">prototype</span><span class="p">);</span>
+
+    <span class="nx">_</span><span class="p">.</span><span class="nx">extend</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">Associations</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">extend</span><span class="p">(</span><span class="nx">new_class</span><span class="p">.</span><span class="nx">prototype</span><span class="p">,</span> <span class="nx">Associations</span><span class="p">.</span><span class="nx">prototype</span><span class="p">);</span>
+
+    <span class="nx">_</span><span class="p">.</span><span class="nx">extend</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">validation</span><span class="p">.</span><span class="nx">Validation</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">extend</span><span class="p">(</span><span class="nx">new_class</span><span class="p">.</span><span class="nx">prototype</span><span class="p">,</span> <span class="nx">validation</span><span class="p">.</span><span class="nx">Validation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">);</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <p>Is used to define a column in the model. The first arguments defines the name of the column.
+mapper.js automatically defines a setter and getter function with the same name. The second
+arguments is the column-type and additional options for the column can be provided
+as a key-value hash as third parameter. Valid column-types are:</p>
+
+<ul>
+<li><code>string</code> - Defines a string column. Valid options are <code>null</code>, <code>default</code> and <code>limit</code>.</li>
+<li><code>text</code> - Defines a text column. Valid options are <code>null</code>, <code>default</code> and <code>limit</code>.</li>
+<li><code>integer</code> - Defines an integer column. Valid options are <code>null</code>, <code>default</code> and <code>limit</code>.</li>
+<li><code>float</code> - Defines a float column. Valid options are <code>null</code>, <code>default</code> and <code>limit</code>.</li>
+<li><code>decimal</code> - Defines a decimal column. Valid options are <code>null</code>, <code>default</code>, <code>limit</code>, <code>precision</code> and <code>scale</code>.</li>
+<li><code>datetime</code> - Defines a datetime column. Valid options are <code>null</code>, <code>default</code> and <code>limit</code>.</li>
+<li><code>time</code> - Defines a time column. Valid options are <code>null</code>, <code>default</code> and <code>limit</code>.</li>
+<li><code>date</code> - Defines a date column. Valid options are <code>null</code>, <code>default</code> and <code>limit</code>.</li>
+<li><code>binary</code> - Defines a binary column. Valid options are <code>null</code>, <code>default</code> and <code>limit</code>.</li>
+<li><code>boolean</code> - Defines a boolean column. Valid options are <code>null</code>, <code>default</code> and <code>limit</code>.</li>
+<li><code>primary_key</code> - Defines the primary key column in the model. Defaults to <code>id</code> if not otherwise specified.</li>
+</ul>
+
+<h4>Examples</h4>
+
+<pre><code>this.defineColumn('name', 'string');
+
+this.defineColumn('value', 'integer', {default: 100});
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">new_class</span><span class="p">.</span><span class="nx">defineColumn</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">column_name</span><span class="p">,</span> <span class="nx">type</span><span class="p">,</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">type</span> <span class="o">==</span> <span class="s1">&#39;primary_key&#39;</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">primary_key</span> <span class="o">=</span> <span class="nx">column_name</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="nx">options</span> <span class="o">=</span> <span class="nx">options</span> <span class="o">||</span> <span class="p">{};</span>
+            <span class="nx">options</span><span class="p">.</span><span class="nx">type</span> <span class="o">=</span> <span class="nx">type</span><span class="p">;</span>
+            <span class="nx">options</span><span class="p">.</span><span class="nx">name</span> <span class="o">=</span> <span class="nx">column_name</span><span class="p">;</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">_columns</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="k">new</span> <span class="nx">Column</span><span class="p">(</span><span class="nx">options</span><span class="p">));</span>
+        <span class="p">}</span>
+
+        <span class="k">this</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">__defineGetter__</span><span class="p">(</span><span class="nx">column_name</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">readAttribute</span><span class="p">(</span><span class="nx">column_name</span><span class="p">);</span>
+        <span class="p">});</span>
+
+        <span class="k">this</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">__defineSetter__</span><span class="p">(</span><span class="nx">column_name</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">val</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">writeAttribute</span><span class="p">(</span><span class="nx">column_name</span><span class="p">,</span> <span class="nx">val</span><span class="p">);</span>
+        <span class="p">});</span>
+    <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <p>options</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">if</span> <span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">inherits</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">new_class</span><span class="p">.</span><span class="nx">_finder_needs_type_condition</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+        <span class="nx">new_class</span><span class="p">.</span><span class="nx">_type_condition</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">inherits</span><span class="p">;</span>
+        <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">known_models</span><span class="p">[</span><span class="nx">options</span><span class="p">.</span><span class="nx">inherits</span><span class="p">.</span><span class="nx">toLowerCase</span><span class="p">()].</span><span class="nx">_columns</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">column</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">new_class</span><span class="p">.</span><span class="nx">defineColumn</span><span class="p">(</span><span class="nx">column</span><span class="p">.</span><span class="nx">name</span><span class="p">,</span> <span class="nx">column</span><span class="p">.</span><span class="nx">type</span><span class="p">,</span> <span class="nx">column</span><span class="p">.</span><span class="nx">options</span><span class="p">);</span>
+        <span class="p">});</span>
+    <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-6">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-6">&#182;</a>               </div>               <p>Should be used to ensure proper model initialization.
+returns <code>true</code> if models can safely be used, otherwise <code>false</code>.
+if a callback function is given it will be called once usage of the models is safe.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">new_class</span><span class="p">.</span><span class="nx">ready</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">fun</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">ready_count</span> <span class="o">&gt;=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">keys</span><span class="p">(</span><span class="nx">known_models</span><span class="p">).</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">fun</span><span class="p">)</span> <span class="p">{</span> <span class="nx">process</span><span class="p">.</span><span class="nx">nextTick</span><span class="p">(</span><span class="nx">fun</span><span class="p">);</span> <span class="p">}</span>
+            <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">fun</span><span class="p">)</span> <span class="p">{</span> <span class="k">this</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;ready&#39;</span><span class="p">,</span> <span class="nx">fun</span><span class="p">);</span> <span class="p">}</span>
+            <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-7">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-7">&#182;</a>               </div>               <p>Executes a custom SQL query against your database and yields all the results.  The results will
+be yield as an array with columns requested encapsulated as attributes of the model you call
+this method from.  If you call <code>Product.find_by_sql</code> then the results will be returned in
+a Product object with the attributes you specified in the SQL query.</p>
+
+<p>If you call a complicated SQL query which spans multiple tables the columns specified by the
+SELECT will be attributes of the model, whether or not they are columns of the corresponding
+table.</p>
+
+<p>The <code>sql</code> parameter is a full SQL query as a string.  It will be called as is, there will be
+no database agnostic conversions performed.  This should be a last resort because using, for example,
+MySQL specific terms will lock you to using that particular database engine or require you to
+change your call if you switch engines.</p>
+
+<h4>Examples</h4>
+
+<pre><code>// A simple SQL query spanning multiple tables
+Post.findBySql("SELECT p.title, c.author FROM posts p, comments c WHERE p.id = c.post_id");
+
+// You can use the same string replacement techniques as you can with #find
+Post.findBySql("SELECT title FROM posts WHERE author = ? AND created &gt; ?", [author_id, start_date]);
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">new_class</span><span class="p">.</span><span class="nx">findBySql</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">sql</span><span class="p">,</span> <span class="nx">binds</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">binds</span> <span class="o">=</span> <span class="nx">binds</span> <span class="o">||</span> <span class="p">[];</span>
+        <span class="kd">var</span> <span class="nx">emitter</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">EventEmitter</span><span class="p">();</span>
+        <span class="kd">var</span> <span class="nx">fun</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">rows</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="nx">error</span><span class="p">);</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;rows&#39;</span><span class="p">,</span> <span class="nx">rows</span><span class="p">);</span>
+        <span class="p">};</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">tableConnection</span><span class="p">().</span><span class="nx">selectAll</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">replaceBindVariables</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">sanitizeSql</span><span class="p">(</span><span class="nx">sql</span><span class="p">),</span> <span class="nx">binds</span><span class="p">),</span> <span class="nx">fun</span><span class="p">);</span>
+        <span class="k">return</span> <span class="nx">emitter</span><span class="p">;</span>
+    <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-8">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-8">&#182;</a>               </div>               <p>Creates an object (or multiple objects) and saves it to the database, if validations pass.
+The resulting object is returned whether the object was saved successfully to the database or not.</p>
+
+<p>The <code>attributes</code> parameter can be either be a Hash or an Array of Hashes.  These Hashes describe the
+attributes on the objects that are to be created.</p>
+
+<h4>Examples</h4>
+
+<pre><code>// Create a single new object
+User.create({first_name: 'Jamie'});
+
+// Create an Array of new objects
+User.create([{ first_name: 'Jamie' }, { first_name: 'Jeremy' }]);
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">new_class</span><span class="p">.</span><span class="nx">create</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">attributes</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">isArray</span><span class="p">(</span><span class="nx">attributes</span><span class="p">))</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">self</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+            <span class="kd">var</span> <span class="nx">event</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">EventEmitter</span><span class="p">();</span>
+            <span class="kd">var</span> <span class="nx">count</span> <span class="o">=</span> <span class="nx">attributes</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
+            <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">attributes</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">attr</span><span class="p">)</span> <span class="p">{</span>
+                <span class="kd">var</span> <span class="nx">object</span> <span class="o">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">create</span><span class="p">(</span><span class="nx">attr</span><span class="p">);</span>
+                <span class="nx">object</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                     <span class="nx">count</span> <span class="o">-=</span> <span class="mi">1</span><span class="p">;</span>
+                     <span class="k">if</span> <span class="p">(</span><span class="nx">count</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+                         <span class="nx">event</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">);</span>
+                     <span class="p">}</span>
+                <span class="p">});</span>
+                <span class="nx">object</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="nx">event</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="nx">error</span><span class="p">);</span>
+                <span class="p">});</span>
+            <span class="p">});</span>
+
+            <span class="k">return</span> <span class="nx">event</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="kd">var</span> <span class="nx">object</span> <span class="o">=</span> <span class="k">new</span> <span class="k">this</span><span class="p">(</span><span class="nx">attributes</span><span class="p">);</span>
+        <span class="k">return</span> <span class="nx">object</span><span class="p">.</span><span class="nx">save</span><span class="p">();</span>
+    <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-9">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-9">&#182;</a>               </div>               <p>Returns a quoted version of the table name, used to construct SQL statements.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">new_class</span><span class="p">.</span><span class="nx">quotedTableName</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">_quoted_table_name</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">_quoted_table_name</span> <span class="o">||</span> <span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">().</span><span class="nx">quotedTableName</span><span class="p">();</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_quoted_table_name</span><span class="p">;</span>
+    <span class="p">};</span>
+
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">tableName</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">_table_name</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">_table_name</span> <span class="o">||</span> <span class="k">this</span><span class="p">.</span><span class="nx">computeTableName</span><span class="p">();</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_table_name</span><span class="p">;</span>
+    <span class="p">};</span>
+
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">table</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">_table</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">_table</span> <span class="o">||</span> <span class="k">new</span> <span class="nx">Table</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">tableName</span><span class="p">(),</span> <span class="k">this</span><span class="p">.</span><span class="nx">tableConnection</span><span class="p">());</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_table</span><span class="p">;</span>
+    <span class="p">};</span>
+
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">tableConnection</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">_table_connection</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">_table_connection</span> <span class="o">||</span> <span class="nx">connection_adapters</span><span class="p">.</span><span class="k">for</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">configuration</span><span class="p">)</span> <span class="o">||</span> <span class="nx">connection_adapters</span><span class="p">.</span><span class="k">for</span><span class="p">(</span><span class="nx">configuration</span><span class="p">);</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_table_connection</span><span class="p">;</span>
+    <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-10">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-10">&#182;</a>               </div>               <p>private methods</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="kc">undefined</span> <span class="o">!==</span> <span class="k">this</span><span class="p">.</span><span class="nx">_relation</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_relation</span><span class="p">;</span> <span class="p">}</span>
+
+        <span class="kd">var</span> <span class="nx">self</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">_relation</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Relation</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">());</span>
+        <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">finderNeedsTypeCondition</span><span class="p">())</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">_relation</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">_relation</span><span class="p">.</span><span class="nx">where</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">typeCondition</span><span class="p">());</span>
+        <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-11">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-11">&#182;</a>               </div>               <p>TODO cleanup</p>             </td>             <td class="code">               <div class="highlight"><pre>        <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">reflections</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">reflection</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">self</span><span class="p">.</span><span class="nx">_relation</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="kd">var</span> <span class="nx">emitter</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">EventEmitter</span><span class="p">();</span>
+
+                <span class="k">this</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="nx">error</span><span class="p">);</span>
+                <span class="p">});</span>
+
+                <span class="k">this</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;rows&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">rows</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="nx">rows</span><span class="p">.</span><span class="nx">length</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s1">&#39;association error&#39;</span><span class="p">));</span>
+                        <span class="k">return</span><span class="p">;</span>
+                    <span class="p">}</span>
+                    <span class="kd">var</span> <span class="nx">record</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">first</span><span class="p">(</span><span class="nx">rows</span><span class="p">)[</span><span class="nx">key</span><span class="p">].</span><span class="nx">all</span><span class="p">();</span>
+                    <span class="nx">record</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="nx">error</span><span class="p">);</span>
+                    <span class="p">});</span>
+
+                    <span class="nx">record</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;row&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">row</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;row&#39;</span><span class="p">,</span> <span class="nx">rows</span><span class="p">);</span>
+                    <span class="p">});</span>
+
+                    <span class="nx">record</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;rows&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">rows</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;rows&#39;</span><span class="p">,</span> <span class="nx">rows</span><span class="p">);</span>
+                    <span class="p">});</span>
+                <span class="p">});</span>
+
+                <span class="k">return</span> <span class="nx">emitter</span><span class="p">;</span>
+            <span class="p">};</span>
+        <span class="p">});</span>
+
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_relation</span><span class="p">;</span>
+    <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-12">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-12">&#182;</a>               </div>               <p>Computes and returns a table name according to default conventions.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">new_class</span><span class="p">.</span><span class="nx">computeTableName</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">finderNeedsTypeCondition</span><span class="p">())</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_type_condition</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">class_name</span><span class="p">;</span>
+    <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-13">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-13">&#182;</a>               </div>               <p>after emiting ready it is safe to use the object</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">new_class</span><span class="p">.</span><span class="nx">createOrUpdateTable</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">finderNeedsTypeCondition</span><span class="p">())</span> <span class="p">{</span>
+            <span class="nx">process</span><span class="p">.</span><span class="nx">nextTick</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="nx">ready_count</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">ready_count</span> <span class="o">&gt;=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">keys</span><span class="p">(</span><span class="nx">known_models</span><span class="p">).</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">known_models</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">model</span><span class="p">,</span> <span class="nx">name</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="nx">model</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;ready&#39;</span><span class="p">,</span> <span class="nx">model</span><span class="p">);</span>
+                    <span class="p">});</span>
+                <span class="p">}</span>
+            <span class="p">});</span>
+
+            <span class="k">return</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="k">this</span><span class="p">.</span><span class="nx">_columns</span><span class="p">.</span><span class="nx">unshift</span><span class="p">(</span><span class="k">new</span> <span class="nx">Column</span><span class="p">({</span><span class="nx">name</span><span class="o">:</span> <span class="k">this</span><span class="p">.</span><span class="nx">primary_key</span><span class="p">,</span> <span class="nx">type</span><span class="o">:</span> <span class="s1">&#39;primary_key&#39;</span><span class="p">}));</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">tableConnection</span><span class="p">().</span><span class="nx">createOrUpdateTable</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="nx">ready_count</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">ready_count</span> <span class="o">&gt;=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">keys</span><span class="p">(</span><span class="nx">known_models</span><span class="p">).</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">known_models</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">model</span><span class="p">,</span> <span class="nx">name</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="nx">model</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;ready&#39;</span><span class="p">,</span> <span class="nx">model</span><span class="p">);</span>
+                <span class="p">});</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+    <span class="p">};</span>
+
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">scoped</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">relation</span><span class="p">();</span>
+    <span class="p">};</span>
+
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">sanitizeSql</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">condition</span><span class="p">,</span> <span class="nx">table_name</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">sanitizeSqlForConditions</span><span class="p">(</span><span class="nx">condition</span><span class="p">,</span> <span class="nx">table_name</span><span class="p">);</span>
+    <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-14">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-14">&#182;</a>               </div>               <p>Accepts an array, hash, or string of SQL conditions and sanitizes
+them into a valid SQL fragment for a WHERE clause.
+    ["name = ? and group<em>id = ?", "foo'bar", 4]  returns  "name = 'foo''bar' and group</em>id = '4'"
+    { name: "foo'bar", group<em>id: 4 }  returns "name = 'foo''bar' and group</em>id = '4'"
+    "name = 'foo''bar' and group<em>id = '4'" returns "name = 'foo''bar' and group</em>id = '4'"</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">new_class</span><span class="p">.</span><span class="nx">sanitizeSqlForConditions</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">condition</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">condition</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="kc">undefined</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">isArray</span><span class="p">(</span><span class="nx">condition</span><span class="p">))</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">sanitizeSqlArray</span><span class="p">(</span><span class="nx">condition</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="nx">condition</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;object&#39;</span> <span class="o">&amp;&amp;</span> <span class="kc">undefined</span> <span class="o">===</span> <span class="nx">condition</span><span class="p">.</span><span class="nx">class_name</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">visitor</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">().</span><span class="nx">selectManager</span><span class="p">().</span><span class="nx">visitor</span><span class="p">;</span>
+            <span class="k">return</span> <span class="nx">nodes</span><span class="p">.</span><span class="nx">sql</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">sanitizeSqlHashForConditions</span><span class="p">(</span><span class="nx">condition</span><span class="p">),</span> <span class="kd">function</span><span class="p">(</span><span class="nx">con</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="nx">visitor</span><span class="p">.</span><span class="nx">visit</span><span class="p">(</span><span class="nx">con</span><span class="p">);</span>
+            <span class="p">}).</span><span class="nx">join</span><span class="p">(</span><span class="s1">&#39; AND &#39;</span><span class="p">));</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="nx">condition</span><span class="p">;</span>
+    <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-15">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-15">&#182;</a>               </div>               <p>Accepts an array, hash, or string of SQL conditions and sanitizes
+them into a valid SQL fragment for a SET clause.
+    { name: undefined, group<em>id: 4 }  returns "name = NULL , group</em>id='4'"</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">new_class</span><span class="p">.</span><span class="nx">sanitizeSqlForAssignment</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">assignments</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">assignments</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="kc">undefined</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">isArray</span><span class="p">(</span><span class="nx">assignments</span><span class="p">))</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">sanitizeSqlArray</span><span class="p">(</span><span class="nx">assignments</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="nx">assignments</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;object&#39;</span> <span class="o">&amp;&amp;</span> <span class="kc">undefined</span> <span class="o">===</span> <span class="nx">assignments</span><span class="p">.</span><span class="nx">class_name</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">visitor</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">().</span><span class="nx">selectManager</span><span class="p">().</span><span class="nx">visitor</span><span class="p">;</span>
+            <span class="k">return</span> <span class="nx">_</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">sanitizeSqlHashForAssignment</span><span class="p">(</span><span class="nx">assignments</span><span class="p">),</span> <span class="kd">function</span><span class="p">(</span><span class="nx">con</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="nx">visitor</span><span class="p">.</span><span class="nx">visit</span><span class="p">(</span><span class="nx">con</span><span class="p">);</span>
+            <span class="p">}).</span><span class="nx">join</span><span class="p">(</span><span class="s1">&#39; AND &#39;</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="nx">nodes</span><span class="p">.</span><span class="nx">sql</span><span class="p">(</span><span class="nx">assignments</span><span class="p">);</span>
+    <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-16">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-16">&#182;</a>               </div>               <p>Accepts an array of conditions.  The array has each value
+sanitized and interpolated into the SQL statement.
+  ["name = ? and group<em>id = ?", "foo'bar", 4]  returns  "name = 'foo''bar' and group</em>id = '4'"</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">new_class</span><span class="p">.</span><span class="nx">sanitizeSqlArray</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ary</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">statement</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">first</span><span class="p">(</span><span class="nx">ary</span><span class="p">);</span>
+        <span class="nx">values</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">rest</span><span class="p">(</span><span class="nx">ary</span><span class="p">);</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">first</span><span class="p">(</span><span class="nx">values</span><span class="p">))</span> <span class="o">==</span> <span class="s1">&#39;object&#39;</span> <span class="o">&amp;&amp;</span> <span class="nx">statement</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/:\w+/</span><span class="p">))</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">nodes</span><span class="p">.</span><span class="nx">sql</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">replaceNamedBindVariables</span><span class="p">(</span><span class="nx">statement</span><span class="p">,</span> <span class="nx">_</span><span class="p">.</span><span class="nx">first</span><span class="p">(</span><span class="nx">values</span><span class="p">)));</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">statement</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="s1">&#39;?&#39;</span><span class="p">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">nodes</span><span class="p">.</span><span class="nx">sql</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">replaceBindVariables</span><span class="p">(</span><span class="nx">statement</span><span class="p">,</span> <span class="nx">values</span><span class="p">));</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="nx">statement</span><span class="p">;</span>
+    <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-17">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-17">&#182;</a>               </div>               <p>Sanitizes a hash of attribute/value pairs into SQL conditions for a <code>WHERE</code> clause.
+    { name: "foo'bar", group<em>id: 4 }
+      // => "name = 'foo''bar' AND group</em>id = 4"
+    { status: undefined, group<em>id: [1,2,3] }
+      // => "status IS NULL AND group</em>id IN (1,2,3)"</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">new_class</span><span class="p">.</span><span class="nx">sanitizeSqlHashForConditions</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">attrs</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">table</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">();</span>
+
+        <span class="k">return</span> <span class="nx">_</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">attrs</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">isArray</span><span class="p">(</span><span class="nx">value</span><span class="p">))</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">).</span><span class="k">in</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">).</span><span class="nx">eq</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+    <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-18">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-18">&#182;</a>               </div>               <p>Sanitizes a hash of attribute/value pairs into SQL conditions for a <code>SET</code> clause.
+    { status: undefined, group<em>id: 1 }
+      // => "status = NULL , group</em>id = 1"</p>
+
+<p>TODO needs testing</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">new_class</span><span class="p">.</span><span class="nx">sanitizeSqlHashForAssignment</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">attrs</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">connection</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">klass</span><span class="p">.</span><span class="nx">tableConnection</span><span class="p">();</span>
+
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">connection</span><span class="p">);</span>
+
+        <span class="k">return</span> <span class="nx">_</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">attrs</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">isArray</span><span class="p">(</span><span class="nx">value</span><span class="p">))</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">).</span><span class="k">in</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">).</span><span class="nx">eq</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+    <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-19">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-19">&#182;</a>               </div>               <p>def sanitize<em>sql</em>hash<em>for</em>assignment(attrs)
+ attrs.map do |attr, value|
+   "#{connection.quote<em>column</em>name(attr)} = #{quote<em>bound</em>value(value)}"
+ end.join(', ')
+end</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">new_class</span><span class="p">.</span><span class="nx">replaceBindVariables</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">statement</span><span class="p">,</span> <span class="nx">values</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">variables_count</span> <span class="o">=</span> <span class="nx">statement</span><span class="p">.</span><span class="nx">replace</span><span class="p">(</span><span class="sr">/[^\?]/g</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">).</span><span class="nx">length</span><span class="p">;</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="nx">values</span><span class="p">.</span><span class="nx">length</span> <span class="o">!=</span> <span class="nx">variables_count</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">throw</span> <span class="s1">&#39;wrong number of bind variables (&#39;</span> <span class="o">+</span> <span class="nx">values</span><span class="p">.</span><span class="nx">length</span> <span class="o">+</span> <span class="s1">&#39; for &#39;</span> <span class="o">+</span> <span class="nx">variables_count</span> <span class="o">+</span> <span class="s1">&#39;) in: &#39;</span> <span class="o">+</span> <span class="nx">statement</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="kd">var</span> <span class="nx">c</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">tableConnection</span><span class="p">();</span>
+        <span class="kd">var</span> <span class="nx">bound</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">clone</span><span class="p">(</span><span class="nx">values</span><span class="p">);</span>
+        <span class="k">return</span> <span class="nx">_</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">statement</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="s1">&#39;?&#39;</span><span class="p">),</span> <span class="kd">function</span><span class="p">(</span><span class="nx">part</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">value</span> <span class="o">=</span> <span class="nx">bound</span><span class="p">.</span><span class="nx">shift</span><span class="p">();</span>
+            <span class="k">return</span> <span class="kc">undefined</span> <span class="o">!==</span> <span class="nx">value</span> <span class="o">?</span> <span class="nx">part</span> <span class="o">+</span> <span class="nx">c</span><span class="p">.</span><span class="nx">quote</span><span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="o">:</span> <span class="nx">part</span><span class="p">;</span>
+        <span class="p">}).</span><span class="nx">join</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">);</span>
+    <span class="p">};</span>
+
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">replaceNamedBindVariables</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">statement</span><span class="p">,</span> <span class="nx">bind_vars</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">keys</span><span class="p">(</span><span class="nx">bind_vars</span><span class="p">),</span> <span class="kd">function</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">pattern</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">RegExp</span><span class="p">(</span><span class="s1">&#39;:&#39;</span> <span class="o">+</span> <span class="nx">key</span><span class="p">,</span> <span class="s1">&#39;g&#39;</span><span class="p">);</span>
+            <span class="nx">statement</span> <span class="o">=</span> <span class="nx">statement</span><span class="p">.</span><span class="nx">replace</span><span class="p">(</span><span class="nx">pattern</span><span class="p">,</span> <span class="nx">bind_vars</span><span class="p">[</span><span class="nx">key</span><span class="p">]);</span>
+        <span class="p">});</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="nx">statement</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/:\w+/</span><span class="p">))</span> <span class="p">{</span>
+            <span class="k">throw</span> <span class="s1">&#39;missing value in &#39;</span> <span class="o">+</span> <span class="nx">statement</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="nx">statement</span><span class="p">;</span>
+    <span class="p">};</span>
+
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">finderNeedsTypeCondition</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_finder_needs_type_condition</span><span class="p">;</span>
+    <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-20">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-20">&#182;</a>               </div>               <p>Returns the column object for the named attribute.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">new_class</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">columnForAttribute</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">name</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">_</span><span class="p">.</span><span class="nx">detect</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">constructor</span><span class="p">.</span><span class="nx">_columns</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">value</span><span class="p">.</span><span class="nx">name</span> <span class="o">==</span> <span class="nx">name</span><span class="p">;</span>
+        <span class="p">});</span>
+    <span class="p">};</span>
+
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">convertNumberColumnValue</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">isBoolean</span><span class="p">(</span><span class="nx">value</span><span class="p">))</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">value</span> <span class="o">?</span> <span class="mi">1</span> <span class="o">:</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">isString</span><span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="nx">value</span><span class="p">.</span><span class="nx">length</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="kc">undefined</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">value</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">};</span>
+
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">typeCondition</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">sti_column</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">().</span><span class="nx">column</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">inheritanceColumn</span><span class="p">());</span>
+        <span class="k">return</span> <span class="nx">sti_column</span><span class="p">.</span><span class="nx">eq</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">stiName</span><span class="p">());</span>
+    <span class="p">};</span>
+
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">modelWithName</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">name</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">known_models</span><span class="p">[</span><span class="nx">name</span><span class="p">.</span><span class="nx">toLowerCase</span><span class="p">()];</span>
+    <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-21">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-21">&#182;</a>               </div>               <p>Defines the column name for use with single table inheritance. Use
+<code>setInheritanceColumn</code> to set a different value.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">new_class</span><span class="p">.</span><span class="nx">inheritanceColumn</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">_inheritance_column</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">_inheritance_column</span> <span class="o">||</span> <span class="s1">&#39;type&#39;</span><span class="p">;</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_inheritance_column</span><span class="p">;</span>
+    <span class="p">};</span>
+
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">stiName</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">class_name</span><span class="p">;</span>
+    <span class="p">};</span>
+
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">__defineGetter__</span><span class="p">(</span><span class="s1">&#39;attributes&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_attributes</span><span class="p">;</span>
+    <span class="p">});</span></pre></div>             </td>           </tr>                               <tr id="section-22">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-22">&#182;</a>               </div>               <p>Allows you to set all the attributes at once by passing in a hash with keys
+matching the attribute names (which again matches the column names).</p>
+
+<pre><code>var user = new User();
+user.attributes = {username: 'Phusion', is_admin: true };
+user.username;   // =&gt; "Phusion"
+user.is_admin;   // =&gt; true
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">new_class</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">__defineSetter__</span><span class="p">(</span><span class="s1">&#39;attributes&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">val</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">self</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+        <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">val</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">self</span><span class="p">.</span><span class="nx">_attributes</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span> <span class="o">=</span> <span class="nx">value</span><span class="p">;</span>
+        <span class="p">});</span>
+    <span class="p">});</span>
+
+    <span class="nx">new_class</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">attributesValues</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">include_primary_key</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">self</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+        <span class="kd">var</span> <span class="nx">attrs</span> <span class="o">=</span> <span class="p">{};</span>
+        <span class="kd">var</span> <span class="nx">klass</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">constructor</span><span class="p">;</span>
+        <span class="kd">var</span> <span class="nx">table</span> <span class="o">=</span> <span class="nx">klass</span><span class="p">.</span><span class="nx">table</span><span class="p">();</span>
+
+        <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_attributes</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">include_primary_key</span> <span class="o">||</span> <span class="nx">key</span> <span class="o">!=</span> <span class="s1">&#39;primary_key&#39;</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">attrs</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span> <span class="o">=</span> <span class="nx">value</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+
+        <span class="k">return</span> <span class="nx">attrs</span><span class="p">;</span>
+    <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-23">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-23">&#182;</a>               </div>               <p>Delegate finder functions to class relation.</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;find&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;first&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;last&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;all&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;exists&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;updateAll&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;update&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;deleteAll&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;delete&#39;</span><span class="p">);</span>
+
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;where&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;select&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;limit&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;group&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;order&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;having&#39;</span><span class="p">);</span>
+
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;average&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;minimum&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;maximum&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;sum&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">relation</span><span class="p">,</span> <span class="s1">&#39;calculate&#39;</span><span class="p">);</span>
+
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">_event_emitter</span><span class="p">,</span> <span class="s1">&#39;emit&#39;</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">delegate</span><span class="p">(</span><span class="nx">new_class</span><span class="p">,</span> <span class="nx">new_class</span><span class="p">.</span><span class="nx">_event_emitter</span><span class="p">,</span> <span class="s1">&#39;on&#39;</span><span class="p">);</span></pre></div>             </td>           </tr>                               <tr id="section-24">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-24">&#182;</a>               </div>               <p>add callbacks</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">callback</span><span class="p">.</span><span class="nx">defineCallbacks</span><span class="p">(</span><span class="nx">new_class</span><span class="p">);</span></pre></div>             </td>           </tr>                               <tr id="section-25">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-25">&#182;</a>               </div>               <p>add validation</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="nx">validation</span><span class="p">.</span><span class="nx">defineValidations</span><span class="p">(</span><span class="nx">new_class</span><span class="p">);</span>
+
+    <span class="k">return</span> <span class="nx">new_class</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">define</span><span class="p">;</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="p">.</span><span class="nx">known_models</span> <span class="o">=</span> <span class="nx">known_models</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-26">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-26">&#182;</a>               </div>               <p>Contains the database configuration as a Hash.</p>
+
+<h4>Example</h4>
+
+<pre><code>{
+    adapter: 'sqlite',
+    database: 'db/development.sqlite3'
+}
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="p">.</span><span class="nx">__defineSetter__</span><span class="p">(</span><span class="s1">&#39;configuration&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">val</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">configuration</span> <span class="o">=</span> <span class="nx">val</span><span class="p">;</span>
+<span class="p">});</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="p">.</span><span class="nx">__defineGetter__</span><span class="p">(</span><span class="s1">&#39;configuration&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">configuration</span><span class="p">;</span>
+<span class="p">});</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

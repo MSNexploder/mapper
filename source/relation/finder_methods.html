@@ -1,0 +1,211 @@
+<!DOCTYPE html>  <html> <head>   <title>finder_methods.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="calculations.html">                 calculations.js               </a>                                           <a class="source" href="finder_methods.html">                 finder_methods.js               </a>                                           <a class="source" href="index.html">                 index.js               </a>                                           <a class="source" href="query_methods.html">                 query_methods.js               </a>                                           <a class="source" href="spawn_methods.html">                 spawn_methods.js               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               finder_methods.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <p>Module dependencies.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">_</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;underscore&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">EventEmitter</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;events&#39;</span><span class="p">).</span><span class="nx">EventEmitter</span><span class="p">;</span>
+<span class="kd">var</span> <span class="nx">Relation</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;../relation&#39;</span><span class="p">);</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>Find operates with four different retrieval approaches:</p>
+
+<ul>
+<li>Find by id - This can either be a specific id (1) or an array of ids ([5, 6, 10]).
+If no record can be found for all of the listed ids, <code>undefined</code> is emitted.</li>
+<li>Find first - This will return the first record matched by the options used. These options can either be specific
+conditions or merely an order. If no record can be matched, <code>undefined</code> is emitted. Use
+<code>Model.find('first', args)</code> or its shortcut <code>Model.first(args)</code>.</li>
+<li>Find last - This will emit the last record matched by the options used. These options can either be specific
+conditions or merely an order. If no record can be matched, <code>undefined</code> is emitted. Use
+<code>Model.find('last', args)</code> or its shortcut <code>Model.last(args)</code>.</li>
+<li>Find all - This will emit all the records matched by the options used.
+If no records are found, an empty array is emitted. Use
+<code>Model.find('all', args)</code> or its shortcut <code>Model.all(args)</code>.</li>
+</ul>
+
+<p>All approaches accept an options hash as their last parameter.</p>
+
+<h4>Parameters</h4>
+
+<ul>
+<li><code>conditions</code> - An SQL fragment like "administrator = 1", <code>["user_name = ?", username]</code>,
+or <code>["user_name = :user_name", { user_name: user_name }]</code>. See conditions in the intro.</li>
+<li><code>order</code> - An SQL fragment like <code>"created_at DESC, name"</code>.</li>
+<li><code>group</code> - An attribute name by which the result should be grouped. Uses the <code>GROUP BY</code> SQL-clause.</li>
+<li><code>having</code> - Combined with <code>group</code> this can be used to filter the records that a
+<code>GROUP BY</code> emits. Uses the <code>HAVING</code> SQL-clause.</li>
+<li><code>limit</code> - An integer determining the limit on the number of rows that should be returned.</li>
+<li><code>offset</code> - An integer determining the offset from where the rows should be fetched. So at 5,
+it would skip rows 0 through 4.</li>
+<li><code>joins</code> - Either an SQL fragment for additional joins like <code>"LEFT JOIN comments ON comments.post_id = id"</code> (rarely needed),
+named associations in the same form used for the <code>include</code> option, which will perform an
+<code>INNER JOIN</code> on the associated table(s),
+or an array containing a mixture of both strings and named associations.
+If the value is a string, then the records will be returned read-only since they will
+have attributes that do not correspond to the table's columns.
+Pass <code>readonly =&gt; false</code> to override.</li>
+<li><code>include</code> - Names associations that should be loaded alongside. The names refer
+to already defined associations. See eager loading under Associations.</li>
+<li><code>select</code> - By default, this is "*" as in "SELECT * FROM", but can be changed if you,
+for example, want to do a join but not include the joined columns. Takes a string with the SELECT SQL fragment (e.g. "id, name").</li>
+<li><code>from</code> - By default, this is the table name of the class, but can be changed
+to an alternate table name (or even the name of a database view).</li>
+<li><code>readonly</code> - Mark the returned records read-only so they cannot be saved or updated.</li>
+<li><code>lock</code> - An SQL fragment like "FOR UPDATE" or "LOCK IN SHARE MODE".
+<code>lock =&gt; true</code> gives connection's default exclusive lock, usually "FOR UPDATE".</li>
+</ul>
+
+<h4>Emits</h4>
+
+<p>All methods emit a <code>row</code> event for every row fetched with the current object as argument.
+At the end another additional event emitted without an argument to indicate the end of results.
+After that a <code>rows</code> event is triggered once with all fetched rows.</p>
+
+<h4>Examples</h4>
+
+<pre><code>// find by id
+Person.find(1);       // emits the object for ID = 1
+Person.find([7, 17]); // emits the objects with IDs in (7, 17)
+Person.find([1]);     // emits the object with ID = 1
+Person.where("administrator = 1").order("created_on DESC").find(1);
+</code></pre>
+
+<p>Note that returned records may not be in the same order as the ids you
+provide since database rows are unordered. Give an explicit <code>order</code>
+to ensure the results are sorted.</p>
+
+<pre><code>// find first
+Person.first(); // emits the first object fetched by SELECT * FROM people
+Person.where(["user_name = ?", user_name]).first();
+Person.where(["user_name = :u", { :u =&gt; user_name }]).first();
+Person.order("created_on DESC").offset(5).first();
+
+// find last
+Person.last(); // emits the last object fetched by SELECT * FROM people
+Person.where(["user_name = ?", user_name]).last();
+Person.order("created_on DESC").offset(5).last();
+
+// find all
+Person.all(); // emits an array of objects for all the rows fetched by SELECT * FROM people
+Person.where(["category IN (?)", categories]).limit(50).all();
+Person.where({ :friends =&gt; ["Bob", "Steve", "Fred"] }).all();
+Person.offset(10).limit(10).all();
+Person.includes([:account, :friends]).all();
+Person.group("category").all();
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">find</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ids</span><span class="p">,</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">_</span><span class="p">.</span><span class="nx">isEmpty</span><span class="p">(</span><span class="nx">options</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">applyFinderOptions</span><span class="p">(</span><span class="nx">options</span><span class="p">).</span><span class="nx">find</span><span class="p">(</span><span class="nx">ids</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">switch</span> <span class="p">(</span><span class="nx">ids</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="s1">&#39;first&#39;</span><span class="o">:</span> <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">first</span><span class="p">();</span>
+            <span class="k">case</span> <span class="s1">&#39;last&#39;</span><span class="o">:</span> <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">last</span><span class="p">();</span>
+            <span class="k">case</span> <span class="s1">&#39;all&#39;</span><span class="o">:</span> <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">all</span><span class="p">();</span>
+            <span class="k">default</span><span class="o">:</span> <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">findWithIds</span><span class="p">(</span><span class="nx">ids</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>A convenience wrapper for <code>find('first', args)</code>. You can pass in all the same
+arguments to this method as you can to <code>find('first')</code>.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">first</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="kc">undefined</span> <span class="o">===</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">findFirst</span><span class="p">().</span><span class="nx">all</span><span class="p">();</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">applyFinderOptions</span><span class="p">(</span><span class="nx">options</span><span class="p">).</span><span class="nx">first</span><span class="p">();</span>
+    <span class="p">}</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <p>A convenience wrapper for <code>find('last', args)</code>. You can pass in all the same
+arguments to this method as you can to <code>find('last')</code>.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">last</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="kc">undefined</span> <span class="o">===</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">findLast</span><span class="p">().</span><span class="nx">all</span><span class="p">();</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">applyFinderOptions</span><span class="p">(</span><span class="nx">options</span><span class="p">).</span><span class="nx">last</span><span class="p">();</span>
+    <span class="p">}</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <p>A convenience wrapper for <code>find('all', args)</code>. You can pass in all the same
+arguments to this method as you can to <code>find('all')</code>.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">all</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="kc">undefined</span> <span class="o">===</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">clone</span><span class="p">().</span><span class="nx">execute</span><span class="p">();</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">applyFinderOptions</span><span class="p">(</span><span class="nx">options</span><span class="p">).</span><span class="nx">all</span><span class="p">();</span>
+    <span class="p">}</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-6">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-6">&#182;</a>               </div>               <p>Emits true if a record exists in the table that matches the <code>id</code> or
+conditions given, or false otherwise. The argument can take five forms:</p>
+
+<ul>
+<li>Integer - Finds the record with this primary key.</li>
+<li>String - Finds the record with a primary key corresponding to this
+string (such as <code>'5'</code>).</li>
+<li>Array - Finds the record that matches these <code>find</code>-style conditions
+(such as <code>['color = ?', 'red']</code>).</li>
+<li>Hash - Finds the record that matches these <code>find</code>-style conditions
+(such as <code>{color: 'red'}</code>).</li>
+<li>No args - Emits false if the table is empty, true otherwise.</li>
+</ul>
+
+<p>For more information about specifying conditions as a Hash or Array,
+see the Conditions section in the introduction to Base.</p>
+
+<p>Note: You can't pass in a condition as a string (like <code>name =
+'Jamie'</code>), since it would be sanitized and then queried against
+the primary key column, like <code>id = 'name = \'Jamie\''</code>.</p>
+
+<h4>Emits</h4>
+
+<p>Emits <code>exists</code> event with <code>true</code> as argument if at least one row is found, else <code>false</code>.</p>
+
+<h4>Examples</h4>
+
+<pre><code>Person.exists(5);
+Person.exists('5');
+Person.exists({name: "David"});
+Person.exists(['name LIKE ?', "%Stefan%"]);
+Person.exists();
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">exists</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">emitter</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">EventEmitter</span><span class="p">();</span>
+    <span class="kd">var</span> <span class="nx">relation</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">select</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">klass</span><span class="p">.</span><span class="nx">primary_key</span><span class="p">).</span><span class="nx">limit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">isArray</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="o">||</span> <span class="k">typeof</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;object&#39;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">relation</span> <span class="o">=</span> <span class="nx">relation</span><span class="p">.</span><span class="nx">where</span><span class="p">(</span><span class="nx">id</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">relation</span> <span class="o">=</span> <span class="nx">relation</span><span class="p">.</span><span class="nx">where</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">primaryKey</span><span class="p">().</span><span class="nx">eq</span><span class="p">(</span><span class="nx">id</span><span class="p">));</span>
+    <span class="p">}</span>
+
+    <span class="nx">relation</span><span class="p">.</span><span class="nx">execute</span><span class="p">();</span>
+    <span class="nx">relation</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;rows&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">rows</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;exists&#39;</span><span class="p">,</span> <span class="nx">rows</span><span class="p">.</span><span class="nx">length</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">);</span>
+    <span class="p">});</span>
+    <span class="nx">relation</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">emitter</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="nx">error</span><span class="p">);</span>
+    <span class="p">});</span>
+
+    <span class="k">return</span> <span class="nx">emitter</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-7">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-7">&#182;</a>               </div>               <p>private methods</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">findWithIds</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ids</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">ids</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">uniq</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">compact</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">flatten</span><span class="p">([</span><span class="nx">ids</span><span class="p">])));</span>
+    <span class="k">switch</span> <span class="p">(</span><span class="nx">ids</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="mi">0</span><span class="o">:</span> 
+            <span class="kd">var</span> <span class="nx">event</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">EventEmitter</span><span class="p">();</span>
+            <span class="nx">process</span><span class="p">.</span><span class="nx">nextTick</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+              <span class="nx">event</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;rows&#39;</span><span class="p">,</span> <span class="p">[]);</span>
+            <span class="p">});</span>
+            <span class="k">return</span> <span class="nx">event</span><span class="p">;</span>
+        <span class="k">case</span> <span class="mi">1</span><span class="o">:</span> <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">findOne</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">first</span><span class="p">(</span><span class="nx">ids</span><span class="p">));</span>
+        <span class="k">default</span><span class="o">:</span> <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">findSome</span><span class="p">(</span><span class="nx">ids</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">findOne</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;object&#39;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">id</span> <span class="o">=</span> <span class="nx">id</span><span class="p">.</span><span class="nx">id</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">where</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">primaryKey</span><span class="p">().</span><span class="nx">eq</span><span class="p">(</span><span class="nx">id</span><span class="p">)).</span><span class="nx">first</span><span class="p">();</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">findSome</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ids</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">ids</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">ids</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="k">typeof</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;object&#39;</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">id</span><span class="p">.</span><span class="nx">id</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="nx">id</span><span class="p">;</span>
+    <span class="p">});</span>
+
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">where</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">primaryKey</span><span class="p">().</span><span class="k">in</span><span class="p">(</span><span class="nx">ids</span><span class="p">)).</span><span class="nx">all</span><span class="p">();</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">findFirst</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">limit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">findLast</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">reverseOrder</span><span class="p">().</span><span class="nx">limit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="p">};</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

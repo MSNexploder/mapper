@@ -1,0 +1,317 @@
+<!DOCTYPE html>  <html> <head>   <title>callbacks.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="callbacks.html">                 callbacks.js               </a>                                           <a class="source" href="index.html">                 index.js               </a>                                           <a class="source" href="primary_key.html">                 primary_key.js               </a>                                           <a class="source" href="read.html">                 read.js               </a>                                           <a class="source" href="write.html">                 write.js               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               callbacks.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <p>Module dependencies.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">_</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;underscore&#39;</span><span class="p">);</span>
+
+<span class="kd">var</span> <span class="nx">Callback</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">clazz</span><span class="p">,</span> <span class="nx">chain</span><span class="p">,</span> <span class="nx">callback</span><span class="p">,</span> <span class="nx">kind</span><span class="p">,</span> <span class="nx">fun</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">clazz</span> <span class="o">=</span> <span class="nx">clazz</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">chain</span> <span class="o">=</span> <span class="nx">chain</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">callback</span> <span class="o">=</span> <span class="nx">callback</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">kind</span> <span class="o">=</span> <span class="nx">kind</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">fun</span> <span class="o">=</span> <span class="nx">fun</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Callback</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">run</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">object</span><span class="p">,</span> <span class="nx">args</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">_</span><span class="p">.</span><span class="nx">bind</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">fun</span><span class="p">,</span> <span class="nx">object</span><span class="p">)(</span><span class="nx">args</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="p">.</span><span class="nx">Callback</span> <span class="o">=</span> <span class="nx">Callback</span><span class="p">;</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="p">.</span><span class="nx">defineCallbacks</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">clazz</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">clazz</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">destroyWithoutCallbacks</span> <span class="o">=</span> <span class="nx">clazz</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">destroy</span><span class="p">;</span>
+    <span class="nx">clazz</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">createOrUpdateWithoutCallbacks</span> <span class="o">=</span> <span class="nx">clazz</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">createOrUpdate</span><span class="p">;</span>
+    <span class="nx">clazz</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">createWithoutCallbacks</span> <span class="o">=</span> <span class="nx">clazz</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">create</span><span class="p">;</span>
+    <span class="nx">clazz</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">updateWithoutCallbacks</span> <span class="o">=</span> <span class="nx">clazz</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">update</span><span class="p">;</span>
+
+    <span class="nx">Callback</span><span class="p">.</span><span class="nx">defineModelCallbacks</span><span class="p">(</span><span class="nx">clazz</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Save&#39;</span><span class="p">,</span> <span class="s1">&#39;Create&#39;</span><span class="p">,</span> <span class="s1">&#39;Update&#39;</span><span class="p">,</span> <span class="s1">&#39;Destroy&#39;</span><span class="p">]);</span>
+
+    <span class="nx">clazz</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">create</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">Callback</span><span class="p">.</span><span class="nx">runCallbacks</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="s1">&#39;create&#39;</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">createWithoutCallbacks</span><span class="p">);</span>
+    <span class="p">};</span>
+
+    <span class="nx">clazz</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">update</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">Callback</span><span class="p">.</span><span class="nx">runCallbacks</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="s1">&#39;update&#39;</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">updateWithoutCallbacks</span><span class="p">);</span>
+    <span class="p">};</span>
+
+    <span class="nx">clazz</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">createOrUpdate</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">Callback</span><span class="p">.</span><span class="nx">runCallbacks</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="s1">&#39;save&#39;</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">createOrUpdateWithoutCallbacks</span><span class="p">);</span>
+    <span class="p">};</span>
+
+    <span class="nx">clazz</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">destroy</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">Callback</span><span class="p">.</span><span class="nx">runCallbacks</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="s1">&#39;destroy&#39;</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">destroyWithoutCallbacks</span><span class="p">);</span>
+    <span class="p">};</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>Runs the callbacks for the given event.</p>
+
+<p>Calls the before and around callbacks in the order they were set, yields
+the block, and then runs the after callbacks in reverse order.
+See <code>ClassMethods.defineCallbacks</code> for more information.</p>
+
+<p>If the callback chain was halted, returns <code>false</code>. Otherwise returns the result
+of the block, or <code>true</code>.</p>
+
+<p>runCallbacks('save', function() {
+     this.save();
+ })</p>
+
+<p>TODO add transaction
+TODO refactor</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Callback</span><span class="p">.</span><span class="nx">runCallbacks</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">object</span><span class="p">,</span> <span class="nx">kind</span><span class="p">,</span> <span class="nx">fun</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">callbacks</span> <span class="o">=</span> <span class="nx">object</span><span class="p">.</span><span class="nx">constructor</span><span class="p">[</span><span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="nx">kind</span><span class="p">.</span><span class="nx">toLowerCase</span><span class="p">()</span> <span class="o">+</span> <span class="s1">&#39;_callbacks&#39;</span><span class="p">];</span>
+    <span class="kd">var</span> <span class="nx">callback</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">i</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>before callbacks</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="kd">var</span> <span class="nx">before_callbacks</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">select</span><span class="p">(</span><span class="nx">callbacks</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">callback</span><span class="p">.</span><span class="nx">kind</span> <span class="o">==</span> <span class="s1">&#39;Before&#39;</span><span class="p">;</span>
+    <span class="p">});</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">before_callbacks</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">callback</span> <span class="o">=</span> <span class="nx">before_callbacks</span><span class="p">[</span><span class="nx">i</span><span class="p">];</span>
+        <span class="k">if</span> <span class="p">(</span><span class="kc">false</span> <span class="o">===</span> <span class="nx">callback</span><span class="p">.</span><span class="nx">run</span><span class="p">(</span><span class="nx">object</span><span class="p">))</span> <span class="p">{</span>
+            <span class="nx">process</span><span class="p">.</span><span class="nx">nextTick</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="nx">object</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s1">&#39;before callback returned false&#39;</span><span class="p">));</span>
+            <span class="p">});</span>
+            <span class="k">return</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <p>around callbacks</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="kd">var</span> <span class="nx">around_callbacks</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">select</span><span class="p">(</span><span class="nx">callbacks</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">callback</span><span class="p">.</span><span class="nx">kind</span> <span class="o">==</span> <span class="s1">&#39;Around&#39;</span><span class="p">;</span>
+    <span class="p">});</span>
+
+    <span class="kd">var</span> <span class="nx">ret</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">_</span><span class="p">.</span><span class="nx">isEmpty</span><span class="p">(</span><span class="nx">around_callbacks</span><span class="p">))</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">initial_around_callback</span> <span class="o">=</span> <span class="nx">around_callbacks</span><span class="p">.</span><span class="nx">shift</span><span class="p">();</span>
+        <span class="kd">var</span> <span class="nx">around_fun</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">current_fun</span> <span class="o">=</span> <span class="nx">around_callbacks</span><span class="p">.</span><span class="nx">shift</span><span class="p">();</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">current_fun</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="nx">current_fun</span><span class="p">.</span><span class="nx">run</span><span class="p">(</span><span class="nx">object</span><span class="p">,</span> <span class="nx">around_fun</span><span class="p">);</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="nx">ret</span> <span class="o">=</span> <span class="nx">fun</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="nx">object</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">};</span>
+        <span class="nx">initial_around_callback</span><span class="p">.</span><span class="nx">run</span><span class="p">(</span><span class="nx">object</span><span class="p">,</span> <span class="nx">around_fun</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="nx">ret</span> <span class="o">=</span> <span class="nx">fun</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="nx">object</span><span class="p">);</span>
+    <span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <p>after callbacks</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="kd">var</span> <span class="nx">after_callbacks</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">select</span><span class="p">(</span><span class="nx">callbacks</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">callback</span><span class="p">.</span><span class="nx">kind</span> <span class="o">==</span> <span class="s1">&#39;After&#39;</span><span class="p">;</span>
+    <span class="p">});</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">after_callbacks</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">callback</span> <span class="o">=</span> <span class="nx">after_callbacks</span><span class="p">[</span><span class="nx">i</span><span class="p">];</span>
+        <span class="k">if</span> <span class="p">(</span><span class="kc">false</span> <span class="o">===</span> <span class="nx">callback</span><span class="p">.</span><span class="nx">run</span><span class="p">(</span><span class="nx">object</span><span class="p">))</span> <span class="p">{</span>
+            <span class="nx">process</span><span class="p">.</span><span class="nx">nextTick</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="nx">object</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s1">&#39;after callback returned false&#39;</span><span class="p">));</span>
+            <span class="p">});</span>
+            <span class="k">return</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="nx">ret</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-6">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-6">&#182;</a>               </div>               <p>TODO
+define<em>model</em>callbacks accepts the same options define_callbacks does, in case
+you want to overwrite a default. Besides that, it also accepts an :only option,
+where you can choose if you want all types (before, around or after) or just some.</p>
+
+<p>define<em>model</em>callbacks :initializer, :only => :after</p>
+
+<p>Note, the <tt>:only => <type></tt> hash will apply to all callbacks defined on
+that method call.  To get around this you can call the define<em>model</em>callbacks
+method as many times as you need.</p>
+
+<p>define<em>model</em>callbacks :create, :only => :after
+  define<em>model</em>callbacks :update, :only => :before
+  define<em>model</em>callbacks :destroy, :only => :around</p>
+
+<p>Would create +after<em>create+, +before</em>update+ and +around_destroy+ methods only.</p>
+
+<p>You can pass in a class to before<em><type>, after</em><type> and around<em><type>, in which
+case the callback will call that class's <action></em><type> method passing the object
+that the callback is being called on.</p>
+
+<p>class MyModel
+    extend ActiveModel::Callbacks
+    define<em>model</em>callbacks :create</p>
+
+<pre><code>before_create AnotherClass
+</code></pre>
+
+<p>end</p>
+
+<p>class AnotherClass
+    def self.before_create( obj )
+      # obj is the MyModel instance that the callback is being called on
+    end
+  end</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Callback</span><span class="p">.</span><span class="nx">defineModelCallbacks</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">clazz</span><span class="p">,</span> <span class="nx">callbacks</span><span class="p">,</span> <span class="nx">types</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">self</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+    <span class="nx">types</span> <span class="o">=</span> <span class="nx">types</span> <span class="o">||</span> <span class="p">[</span><span class="s1">&#39;Before&#39;</span><span class="p">,</span> <span class="s1">&#39;Around&#39;</span><span class="p">,</span> <span class="s1">&#39;After&#39;</span><span class="p">];</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">callbacks</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">self</span><span class="p">.</span><span class="nx">defineCallbacks</span><span class="p">(</span><span class="nx">clazz</span><span class="p">,</span> <span class="nx">callback</span><span class="p">);</span>
+
+        <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">types</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">self</span><span class="p">[</span><span class="s1">&#39;_define&#39;</span> <span class="o">+</span> <span class="nx">type</span> <span class="o">+</span> <span class="s1">&#39;ModelCallback&#39;</span><span class="p">](</span><span class="nx">clazz</span><span class="p">,</span> <span class="nx">callback</span><span class="p">);</span>
+        <span class="p">});</span>
+    <span class="p">});</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-7">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-7">&#182;</a>               </div>               <p>TODO
+Define sets of events in the object lifecycle that support callbacks.</p>
+
+<p>define<em>callbacks :validate
+  define</em>callbacks :initialize, :save, :destroy</p>
+
+<p>===== Options</p>
+
+<ul>
+<li><p><tt>:terminator</tt> - Determines when a before filter will halt the callback
+chain, preventing following callbacks from being called and the event from being
+triggered. This is a string to be eval'ed. The result of the callback is available
+in the <tt>result</tt> variable.</p>
+
+<p>define_callbacks :validate, :terminator => "result == false"</p>
+
+<p>In this example, if any before validate callbacks returns +false+,
+other callbacks are not executed. Defaults to "false", meaning no value
+halts the chain.</p></li>
+<li><p><tt>:rescuable</tt> - By default, after filters are not executed if
+the given block or a before filter raises an error. By setting this option
+to <tt>true</tt> exception raised by given block is stored and after
+executing all the after callbacks the stored exception is raised.</p></li>
+<li><p><tt>:scope</tt> - Indicates which methods should be executed when an object
+is used as a callback.</p>
+
+<p>class Audit
+  def before(caller)
+    puts 'Audit: before is called'
+  end</p>
+
+<p>def before<em>save(caller)
+    puts 'Audit: before</em>save is called'
+  end
+end</p>
+
+<p>class Account
+  include ActiveSupport::Callbacks</p>
+
+<p>define<em>callbacks :save
+  set</em>callback :save, :before, Audit.new</p>
+
+<p>def save
+    run_callbacks :save do
+      puts 'save in main'
+    end
+  end
+end</p>
+
+<p>In the above case whenever you save an account the method <tt>Audit#before</tt> will
+be called. On the other hand</p>
+
+<p>define_callbacks :save, :scope => [:kind, :name]</p>
+
+<p>would trigger <tt>Audit#before<em>save</tt> instead. That's constructed by calling
+<tt>#{kind}</em>#{name}</tt> on the given instance. In this case "kind" is "before" and
+"name" is "save". In this context +:kind+ and +:name+ have special meanings: +:kind+
+refers to the kind of callback (before/after/around) and +:name+ refers to the
+method on which callbacks are being defined.</p>
+
+<p>A declaration like</p>
+
+<p>define_callbacks :save, :scope => [:name]</p>
+
+<p>would call <tt>Audit#save</tt>.</p></li>
+</ul>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Callback</span><span class="p">.</span><span class="nx">defineCallbacks</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">clazz</span><span class="p">,</span> <span class="nx">callbacks</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">self</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">_</span><span class="p">.</span><span class="nx">isArray</span><span class="p">(</span><span class="nx">callbacks</span><span class="p">))</span> <span class="p">{</span>
+        <span class="nx">callbacks</span> <span class="o">=</span> <span class="p">[</span><span class="nx">callbacks</span><span class="p">];</span>
+    <span class="p">}</span>
+
+    <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">callbacks</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">class_attribute</span> <span class="o">=</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="nx">callback</span><span class="p">.</span><span class="nx">toLowerCase</span><span class="p">()</span> <span class="o">+</span> <span class="s1">&#39;_callbacks&#39;</span><span class="p">;</span>
+        <span class="nx">clazz</span><span class="p">[</span><span class="nx">class_attribute</span><span class="p">]</span> <span class="o">=</span> <span class="p">[];</span>
+    <span class="p">});</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-8">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-8">&#182;</a>               </div>               <p>TODO
+Install a callback for the given event.</p>
+
+<p>set<em>callback :save, :before, :before</em>meth
+  set<em>callback :save, :after,  :after</em>meth, :if => :condition
+  set_callback :save, :around, lambda { |r| stuff; yield; stuff }</p>
+
+<p>The second arguments indicates whether the callback is to be run +:before+,
++:after+, or +:around+ the event. If omitted, +:before+ is assumed. This
+means the first example above can also be written as:</p>
+
+<p>set<em>callback :save, :before</em>meth</p>
+
+<p>The callback can specified as a symbol naming an instance method; as a proc,
+lambda, or block; as a string to be instance evaluated; or as an object that
+responds to a certain method determined by the <tt>:scope</tt> argument to
++define_callback+.</p>
+
+<p>If a proc, lambda, or block is given, its body is evaluated in the context
+of the current object. It can also optionally accept the current object as
+an argument.</p>
+
+<p>Before and around callbacks are called in the order that they are set; after
+callbacks are called in the reverse order.</p>
+
+<p>===== Options</p>
+
+<ul>
+<li><tt>:if</tt> - A symbol naming an instance method or a proc; the callback
+will be called only when it returns a true value.</li>
+<li><tt>:unless</tt> - A symbol naming an instance method or a proc; the callback
+will be called only when it returns a false value.</li>
+<li><tt>:prepend</tt> - If true, the callback will be prepended to the existing
+chain rather than appended.</li>
+<li><tt>:per_key</tt> - A hash with <tt>:if</tt> and <tt>:unless</tt> options;
+see "Per-key conditions" below.</li>
+</ul>
+
+<p>===== Per-key conditions</p>
+
+<p>When creating or skipping callbacks, you can specify conditions that
+are always the same for a given key. For instance, in Action Pack,
+we convert :only and :except conditions into per-key conditions.</p>
+
+<p>before_filter :authenticate, :except => "index"</p>
+
+<p>becomes</p>
+
+<p>set<em>callback :process</em>action, :before, :authenticate, :per<em>key => {:unless => proc {|c| c.action</em>name == "index"}}</p>
+
+<p>Per-key conditions are evaluated only once per use of a given key.
+In the case of the above example, you would do:</p>
+
+<p>run<em>callbacks(:process</em>action, action_name) { ... dispatch stuff ... }</p>
+
+<p>In that case, each action<em>name would get its own compiled callback
+method that took into consideration the per</em>key conditions. This
+is a speed improvement for ActionPack.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Callback</span><span class="p">.</span><span class="nx">setCallback</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">clazz</span><span class="p">,</span> <span class="nx">callback</span><span class="p">,</span> <span class="nx">kind</span><span class="p">,</span> <span class="nx">fun</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">chain</span> <span class="o">=</span> <span class="nx">clazz</span><span class="p">[</span><span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="nx">callback</span><span class="p">.</span><span class="nx">toLowerCase</span><span class="p">()</span> <span class="o">+</span> <span class="s1">&#39;_callbacks&#39;</span><span class="p">];</span>
+    <span class="nx">chain</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="k">new</span> <span class="k">this</span><span class="p">(</span><span class="nx">clazz</span><span class="p">,</span> <span class="nx">chain</span><span class="p">,</span> <span class="nx">callback</span><span class="p">,</span> <span class="nx">kind</span><span class="p">,</span> <span class="nx">fun</span><span class="p">));</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-9">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-9">&#182;</a>               </div>               <p>def set<em>callback(name, *filter</em>list, &amp;block)
+ mapped = nil</p>
+
+<p><em>_update</em>callbacks(name, filter_list, block) do |target, chain, type, filters, options|
+   mapped ||= filters.map do |filter|
+     Callback.new(chain, filter, type, options.dup, self)
+   end</p>
+
+<p>filters.each do |filter|
+     chain.delete_if {|c| c.matches?(type, filter) }
+   end</p>
+
+<p>options[:prepend] ? chain.unshift(<em>(mapped.reverse)) : chain.push(</em>mapped)</p>
+
+<p>target.send("<em>#{name}</em>callbacks=", chain)
+ end
+end</p>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-10">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-10">&#182;</a>               </div>               <p>private methods</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Callback</span><span class="p">.</span><span class="nx">_defineBeforeModelCallback</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">clazz</span><span class="p">,</span> <span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">self</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+    <span class="nx">clazz</span><span class="p">[</span><span class="s1">&#39;before&#39;</span> <span class="o">+</span> <span class="nx">callback</span><span class="p">]</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">fun</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">self</span><span class="p">.</span><span class="nx">setCallback</span><span class="p">(</span><span class="nx">clazz</span><span class="p">,</span> <span class="nx">callback</span><span class="p">,</span> <span class="s1">&#39;Before&#39;</span><span class="p">,</span> <span class="nx">fun</span><span class="p">);</span>
+    <span class="p">};</span>
+<span class="p">};</span>
+
+<span class="nx">Callback</span><span class="p">.</span><span class="nx">_defineAroundModelCallback</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">clazz</span><span class="p">,</span> <span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">self</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+    <span class="nx">clazz</span><span class="p">[</span><span class="s1">&#39;around&#39;</span> <span class="o">+</span> <span class="nx">callback</span><span class="p">]</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">fun</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">self</span><span class="p">.</span><span class="nx">setCallback</span><span class="p">(</span><span class="nx">clazz</span><span class="p">,</span> <span class="nx">callback</span><span class="p">,</span> <span class="s1">&#39;Around&#39;</span><span class="p">,</span> <span class="nx">fun</span><span class="p">);</span>
+    <span class="p">};</span>
+<span class="p">};</span>
+
+<span class="nx">Callback</span><span class="p">.</span><span class="nx">_defineAfterModelCallback</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">clazz</span><span class="p">,</span> <span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">self</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+    <span class="nx">clazz</span><span class="p">[</span><span class="s1">&#39;after&#39;</span> <span class="o">+</span> <span class="nx">callback</span><span class="p">]</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">fun</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">self</span><span class="p">.</span><span class="nx">setCallback</span><span class="p">(</span><span class="nx">clazz</span><span class="p">,</span> <span class="nx">callback</span><span class="p">,</span> <span class="s1">&#39;After&#39;</span><span class="p">,</span> <span class="nx">fun</span><span class="p">);</span>
+    <span class="p">};</span>
+<span class="p">};</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

@@ -1,0 +1,62 @@
+<!DOCTYPE html>  <html> <head>   <title>spawn_methods.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="calculations.html">                 calculations.js               </a>                                           <a class="source" href="finder_methods.html">                 finder_methods.js               </a>                                           <a class="source" href="index.html">                 index.js               </a>                                           <a class="source" href="query_methods.html">                 query_methods.js               </a>                                           <a class="source" href="spawn_methods.html">                 spawn_methods.js               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               spawn_methods.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>                            </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">_</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;underscore&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">nodes</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;../nodes&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">Relation</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;../relation&#39;</span><span class="p">);</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>Removes from the query the condition(s) specified in <code>skips</code>.</p>
+
+<h4>Example</h4>
+
+<pre><code>Post.order('id asc').except('order');                  // discards the order condition
+Post.where('id &gt; 10').order('id asc').except('where'); // discards the where condition but keeps the order
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">except</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">skips</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">self</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Relation</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">klass</span><span class="p">,</span> <span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">);</span>
+    <span class="nx">skips</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">uniq</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">compact</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">flatten</span><span class="p">([</span><span class="nx">skips</span><span class="p">])));</span>
+
+    <span class="kd">var</span> <span class="nx">multi_values</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">select</span><span class="p">(</span><span class="nx">Relation</span><span class="p">.</span><span class="nx">multi_value_methods</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">val</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="o">!</span><span class="nx">_</span><span class="p">.</span><span class="nx">include</span><span class="p">(</span><span class="nx">skips</span><span class="p">,</span> <span class="nx">val</span><span class="p">);</span>
+    <span class="p">});</span>
+
+    <span class="kd">var</span> <span class="nx">single_values</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">select</span><span class="p">(</span><span class="nx">Relation</span><span class="p">.</span><span class="nx">single_value_methods</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">val</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="o">!</span><span class="nx">_</span><span class="p">.</span><span class="nx">include</span><span class="p">(</span><span class="nx">skips</span><span class="p">,</span> <span class="nx">val</span><span class="p">);</span>
+    <span class="p">});</span>
+
+    <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">multi_values</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">method</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">result</span><span class="p">[</span><span class="nx">method</span> <span class="o">+</span> <span class="s1">&#39;_values&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nx">self</span><span class="p">[</span><span class="nx">method</span> <span class="o">+</span> <span class="s1">&#39;_values&#39;</span><span class="p">];</span>
+    <span class="p">});</span>
+
+    <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">single_values</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">method</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">result</span><span class="p">[</span><span class="nx">method</span> <span class="o">+</span> <span class="s1">&#39;_value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nx">self</span><span class="p">[</span><span class="nx">method</span> <span class="o">+</span> <span class="s1">&#39;_value&#39;</span><span class="p">];</span>
+    <span class="p">});</span>
+
+    <span class="k">return</span> <span class="nx">result</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>private methods</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">applyFinderOptions</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">relation</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">clone</span><span class="p">();</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">isEmpty</span><span class="p">(</span><span class="nx">options</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">relation</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="kd">var</span> <span class="nx">valid_keys</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;joins&#39;</span><span class="p">,</span> <span class="s1">&#39;select&#39;</span><span class="p">,</span> <span class="s1">&#39;group&#39;</span><span class="p">,</span> <span class="s1">&#39;order&#39;</span><span class="p">,</span> <span class="s1">&#39;having&#39;</span><span class="p">,</span> <span class="s1">&#39;limit&#39;</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">,</span> <span class="s1">&#39;from&#39;</span><span class="p">,</span> <span class="s1">&#39;lock&#39;</span><span class="p">,</span> <span class="s1">&#39;readonly&#39;</span><span class="p">];</span>
+
+    <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">options</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">_</span><span class="p">.</span><span class="nx">include</span><span class="p">(</span><span class="nx">valid_keys</span><span class="p">,</span> <span class="nx">key</span><span class="p">))</span> <span class="p">{</span>
+            <span class="k">return</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="nx">relation</span> <span class="o">=</span> <span class="nx">relation</span><span class="p">[</span><span class="nx">key</span><span class="p">](</span><span class="nx">value</span><span class="p">);</span>
+    <span class="p">});</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">conditions</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">relation</span> <span class="o">=</span> <span class="nx">relation</span><span class="p">.</span><span class="nx">where</span><span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">conditions</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">include</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">relation</span> <span class="o">=</span> <span class="nx">relation</span><span class="p">.</span><span class="nx">includes</span><span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">include</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">extend</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">relation</span> <span class="o">=</span> <span class="nx">relation</span><span class="p">.</span><span class="nx">extending</span><span class="p">(</span><span class="nx">options</span><span class="p">.</span><span class="nx">extend</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="nx">relation</span><span class="p">;</span>
+<span class="p">};</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

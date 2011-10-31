@@ -1,0 +1,65 @@
+<!DOCTYPE html>  <html> <head>   <title>has_one_association.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="association.html">                 association.js               </a>                                           <a class="source" href="association_collection.html">                 association_collection.js               </a>                                           <a class="source" href="belongs_to_association.html">                 belongs_to_association.js               </a>                                           <a class="source" href="has_many_association.html">                 has_many_association.js               </a>                                           <a class="source" href="has_one_association.html">                 has_one_association.js               </a>                                           <a class="source" href="index.html">                 index.js               </a>                                           <a class="source" href="reflection.html">                 reflection.js               </a>                                           <a class="source" href="singular_association.html">                 singular_association.js               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               has_one_association.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>                            </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">util</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;util&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">_</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;underscore&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">SingularAssociation</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./singular_association&#39;</span><span class="p">);</span>
+
+<span class="kd">var</span> <span class="nx">HasOneAssociation</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">owner</span><span class="p">,</span> <span class="nx">reflection</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">SingularAssociation</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="nx">owner</span><span class="p">,</span> <span class="nx">reflection</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="nx">util</span><span class="p">.</span><span class="nx">inherits</span><span class="p">(</span><span class="nx">HasOneAssociation</span><span class="p">,</span> <span class="nx">SingularAssociation</span><span class="p">);</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">HasOneAssociation</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>def replace(record, save = true)
+ record = check<em>record(record)
+ load</em>target</p>
+
+<p>@reflection.klass.transaction do
+   if @target &amp;&amp; @target != record
+     remove_target!(@reflection.options[:dependent])
+   end</p>
+
+<p>if record
+     set<em>inverse</em>instance(record)
+     set<em>owner</em>attributes(record)</p>
+
+<pre><code> if @owner.persisted? &amp;&amp; save &amp;&amp; !record.save
+   nullify_owner_attributes(record)
+   set_owner_attributes(@target)
+   raise RecordNotSaved, "Failed to save the new associated #{@reflection.name}."
+ end
+</code></pre>
+
+<p>end
+ end</p>
+
+<p>self.target = record
+end</p>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>TODO</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">HasOneAssociation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">replace</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">record</span><span class="p">,</span> <span class="nx">save</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">save</span> <span class="o">=</span> <span class="nx">save</span> <span class="o">||</span> <span class="kc">true</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <p>TODO add checks</p>             </td>             <td class="code">               <div class="highlight"><pre>    <span class="k">this</span><span class="p">.</span><span class="nx">loadTarget</span><span class="p">();</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">target</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// TODO</span>
+        <span class="kd">var</span> <span class="nx">target</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">all</span><span class="p">();</span>
+        <span class="nx">target</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;row&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">row</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="kc">undefined</span> <span class="o">===</span> <span class="nx">row</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span><span class="p">;</span> <span class="p">}</span>
+            <span class="nx">row</span><span class="p">.</span><span class="nx">destroy</span><span class="p">();</span>
+        <span class="p">});</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nx">record</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">setOwnerAttributes</span><span class="p">(</span><span class="nx">record</span><span class="p">);</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">record</span><span class="p">.</span><span class="nx">save</span><span class="p">())</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">nullifyOwnerAttributes</span><span class="p">(</span><span class="nx">record</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">setOwnerAttributes</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">target</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="k">this</span><span class="p">.</span><span class="nx">target</span> <span class="o">=</span> <span class="nx">record</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">HasOneAssociation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">setNewRecord</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">record</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">replace</span><span class="p">(</span><span class="nx">record</span><span class="p">,</span> <span class="kc">false</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="nx">HasOneAssociation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">nullifyOwnerAttributes</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">record</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">record</span><span class="p">[</span><span class="k">this</span><span class="p">.</span><span class="nx">reflection</span><span class="p">.</span><span class="nx">foreign_key</span><span class="p">]</span> <span class="o">=</span> <span class="kc">undefined</span><span class="p">;</span>
+<span class="p">};</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

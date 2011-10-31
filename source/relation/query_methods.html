@@ -1,0 +1,245 @@
+<!DOCTYPE html>  <html> <head>   <title>query_methods.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="calculations.html">                 calculations.js               </a>                                           <a class="source" href="finder_methods.html">                 finder_methods.js               </a>                                           <a class="source" href="index.html">                 index.js               </a>                                           <a class="source" href="query_methods.html">                 query_methods.js               </a>                                           <a class="source" href="spawn_methods.html">                 spawn_methods.js               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               query_methods.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <p>Module dependencies.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">_</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;underscore&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">nodes</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;../nodes&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">Relation</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;../relation&#39;</span><span class="p">);</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">arel</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">_arel</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">_arel</span> <span class="o">||</span> <span class="k">this</span><span class="p">.</span><span class="nx">buildArel</span><span class="p">();</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_arel</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">buildArel</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">self</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">arel</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">;</span>
+
+    <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">uniq</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">where_values</span><span class="p">),</span> <span class="kd">function</span><span class="p">(</span><span class="nx">where</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">arel</span> <span class="o">=</span> <span class="nx">arel</span><span class="p">.</span><span class="nx">where</span><span class="p">(</span><span class="k">new</span> <span class="nx">nodes</span><span class="p">.</span><span class="nx">Grouping</span><span class="p">(</span><span class="nx">self</span><span class="p">.</span><span class="nx">buildWhereClause</span><span class="p">(</span><span class="nx">where</span><span class="p">)));</span>
+    <span class="p">});</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">_</span><span class="p">.</span><span class="nx">isEmpty</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">order_values</span><span class="p">))</span> <span class="p">{</span>
+        <span class="nx">arel</span> <span class="o">=</span> <span class="nx">arel</span><span class="p">.</span><span class="nx">order</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">uniq</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">order_values</span><span class="p">));</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">_</span><span class="p">.</span><span class="nx">isEmpty</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">group_values</span><span class="p">))</span> <span class="p">{</span>
+        <span class="nx">arel</span> <span class="o">=</span> <span class="nx">arel</span><span class="p">.</span><span class="nx">group</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">uniq</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">group_values</span><span class="p">));</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">_</span><span class="p">.</span><span class="nx">isEmpty</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">having_values</span><span class="p">))</span> <span class="p">{</span>
+        <span class="nx">arel</span> <span class="o">=</span> <span class="nx">arel</span><span class="p">.</span><span class="nx">having</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">uniq</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">having_values</span><span class="p">));</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="kc">undefined</span> <span class="o">!==</span> <span class="k">this</span><span class="p">.</span><span class="nx">limit_value</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">arel</span> <span class="o">=</span> <span class="nx">arel</span><span class="p">.</span><span class="nx">take</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">sanitizeLimit</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">limit_value</span><span class="p">));</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="kc">undefined</span> <span class="o">!==</span> <span class="k">this</span><span class="p">.</span><span class="nx">offset_value</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">arel</span> <span class="o">=</span> <span class="nx">arel</span><span class="p">.</span><span class="nx">skip</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">offset_value</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="kc">undefined</span> <span class="o">!==</span> <span class="k">this</span><span class="p">.</span><span class="nx">from_value</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">arel</span> <span class="o">=</span> <span class="nx">arel</span><span class="p">.</span><span class="nx">skip</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">from_value</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="kc">undefined</span> <span class="o">!==</span> <span class="k">this</span><span class="p">.</span><span class="nx">lock_value</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">arel</span> <span class="o">=</span> <span class="nx">arel</span><span class="p">.</span><span class="nx">skip</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">lock_value</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="nx">arel</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">buildSelect</span><span class="p">(</span><span class="nx">arel</span><span class="p">,</span> <span class="nx">_</span><span class="p">.</span><span class="nx">uniq</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">select_values</span><span class="p">));</span>
+
+    <span class="k">return</span> <span class="nx">arel</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">where</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">rest</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">relation</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">clone</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">opts</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">relation</span><span class="p">.</span><span class="nx">where_values</span> <span class="o">=</span> <span class="nx">relation</span><span class="p">.</span><span class="nx">where_values</span><span class="p">.</span><span class="nx">concat</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">buildWhere</span><span class="p">(</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">rest</span><span class="p">));</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="nx">relation</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">select</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">relation</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">clone</span><span class="p">();</span>
+    <span class="nx">relation</span><span class="p">.</span><span class="nx">select_values</span> <span class="o">=</span> <span class="nx">relation</span><span class="p">.</span><span class="nx">select_values</span><span class="p">.</span><span class="nx">concat</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">compact</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">flatten</span><span class="p">([</span><span class="nx">value</span><span class="p">])));</span>
+    <span class="k">return</span> <span class="nx">relation</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">lock</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">condition</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">relation</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">clone</span><span class="p">();</span>
+    <span class="nx">relation</span><span class="p">.</span><span class="nx">lock_value</span> <span class="o">=</span> <span class="nx">condition</span><span class="p">;</span>
+    <span class="k">return</span> <span class="nx">relation</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">exists</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">condition</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">relation</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">clone</span><span class="p">();</span>
+    <span class="nx">relation</span><span class="p">.</span><span class="nx">exists_value</span> <span class="o">=</span> <span class="nx">condition</span><span class="p">;</span>
+    <span class="k">return</span> <span class="nx">relation</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">limit</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">relation</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">clone</span><span class="p">();</span>
+    <span class="nx">relation</span><span class="p">.</span><span class="nx">limit_value</span> <span class="o">=</span> <span class="nx">value</span><span class="p">;</span>
+    <span class="k">return</span> <span class="nx">relation</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">group</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">args</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">relation</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">clone</span><span class="p">();</span>
+    <span class="nx">relation</span><span class="p">.</span><span class="nx">group_values</span> <span class="o">=</span> <span class="nx">relation</span><span class="p">.</span><span class="nx">group_values</span><span class="p">.</span><span class="nx">concat</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">compact</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">flatten</span><span class="p">([</span><span class="nx">args</span><span class="p">])));</span>
+    <span class="k">return</span> <span class="nx">relation</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">order</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">args</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">relation</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">clone</span><span class="p">();</span>
+    <span class="nx">relation</span><span class="p">.</span><span class="nx">order_values</span> <span class="o">=</span> <span class="nx">relation</span><span class="p">.</span><span class="nx">order_values</span><span class="p">.</span><span class="nx">concat</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">compact</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">flatten</span><span class="p">([</span><span class="nx">args</span><span class="p">])));</span>
+    <span class="k">return</span> <span class="nx">relation</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">having</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">args</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">relation</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">clone</span><span class="p">();</span>
+    <span class="nx">relation</span><span class="p">.</span><span class="nx">having_values</span> <span class="o">=</span> <span class="nx">relation</span><span class="p">.</span><span class="nx">having_values</span><span class="p">.</span><span class="nx">concat</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">buildWhere</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">flatten</span><span class="p">([</span><span class="nx">args</span><span class="p">])));</span>
+    <span class="k">return</span> <span class="nx">relation</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">offset</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">relation</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">clone</span><span class="p">();</span>
+    <span class="nx">relation</span><span class="p">.</span><span class="nx">offset_value</span> <span class="o">=</span> <span class="nx">value</span><span class="p">;</span>
+    <span class="k">return</span> <span class="nx">relation</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>Sanitizes the given LIMIT parameter in order to prevent SQL injection.</p>
+
+<p>The <code>limit</code> may be anything that can evaluate to a string via #toString. It
+should look like an integer, or a comma-delimited list of integers, or
+an SQL literal.</p>
+
+<p>Returns Integer and SqlLiteral limits as is.
+Returns the sanitized limit parameter, either as an integer, or as a
+string which contains a comma-delimited list of integers.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">sanitizeLimit</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">limit</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">isInt</span><span class="p">(</span><span class="nx">limit</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="nx">_</span><span class="p">.</span><span class="nx">isNumber</span><span class="p">(</span><span class="nx">limit</span><span class="p">)</span> <span class="o">||</span> <span class="nx">limit</span><span class="p">.</span><span class="nx">class_name</span> <span class="o">==</span> <span class="s1">&#39;SqlLiteral&#39;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">limit</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">limit</span><span class="p">.</span><span class="nx">toString</span><span class="p">().</span><span class="nx">match</span><span class="p">(</span><span class="sr">/,/</span><span class="p">))</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">sql</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">compact</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">limit</span><span class="p">.</span><span class="nx">toString</span><span class="p">().</span><span class="nx">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">),</span> <span class="kd">function</span><span class="p">(</span><span class="nx">val</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">lim</span> <span class="o">=</span> <span class="nb">parseInt</span><span class="p">(</span><span class="nx">val</span><span class="p">,</span> <span class="mi">10</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nb">isNaN</span><span class="p">(</span><span class="nx">lim</span><span class="p">))</span> <span class="p">{</span> <span class="k">return</span> <span class="kc">undefined</span><span class="p">;</span> <span class="p">}</span>
+            <span class="k">return</span> <span class="nx">lim</span><span class="p">;</span>
+        <span class="p">})).</span><span class="nx">join</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">);</span>
+        <span class="k">return</span> <span class="nx">nodes</span><span class="p">.</span><span class="nx">sql</span><span class="p">(</span><span class="nx">sql</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nb">parseInt</span><span class="p">(</span><span class="nx">limit</span><span class="p">,</span> <span class="mi">10</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">buildWhere</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">opts</span><span class="p">,</span> <span class="nx">other</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">other</span> <span class="o">=</span> <span class="nx">other</span> <span class="o">||</span> <span class="p">[];</span>
+    <span class="kd">var</span> <span class="nx">values</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">isEmpty</span><span class="p">(</span><span class="nx">other</span><span class="p">)</span> <span class="o">?</span> <span class="nx">opts</span> <span class="o">:</span> <span class="p">[</span><span class="nx">opts</span><span class="p">].</span><span class="nx">concat</span><span class="p">(</span><span class="nx">other</span><span class="p">);</span>
+
+    <span class="k">return</span> <span class="p">[</span><span class="k">this</span><span class="p">.</span><span class="nx">klass</span><span class="p">.</span><span class="nx">sanitizeSql</span><span class="p">(</span><span class="nx">values</span><span class="p">)];</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">buildWhereClause</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">clause</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">table</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">isString</span><span class="p">(</span><span class="nx">clause</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">nodes</span><span class="p">.</span><span class="nx">sql</span><span class="p">(</span><span class="nx">clause</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="kc">undefined</span> <span class="o">!==</span> <span class="nx">clause</span><span class="p">.</span><span class="nx">class_name</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">clause</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">values</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">keys</span><span class="p">(</span><span class="nx">clause</span><span class="p">),</span> <span class="kd">function</span><span class="p">(</span><span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">value</span> <span class="o">=</span> <span class="nx">clause</span><span class="p">[</span><span class="nx">key</span><span class="p">];</span>
+            <span class="kd">var</span> <span class="nx">regex</span> <span class="o">=</span> <span class="sr">/^(.+)_(eq|not|neq|noteq|notEq|gt|gte|gteq|gtEq|lt|lte|lteq|ltEq|like|nlike|notlike|notLike|in|nin|notin|notIn)$/</span><span class="p">;</span>
+            <span class="kd">var</span> <span class="nx">matches</span> <span class="o">=</span> <span class="nx">key</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="nx">regex</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="kc">null</span> <span class="o">===</span> <span class="nx">matches</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">isArray</span><span class="p">(</span><span class="nx">value</span><span class="p">))</span> <span class="p">{</span>
+                    <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">).</span><span class="k">in</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                    <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">).</span><span class="nx">eq</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+                <span class="p">}</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="nx">key</span> <span class="o">=</span> <span class="nx">matches</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+                <span class="nx">matches</span> <span class="o">=</span> <span class="nx">matches</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+                <span class="k">return</span> <span class="nx">Relation</span><span class="p">.</span><span class="nx">whereForAttributes</span><span class="p">(</span><span class="nx">table</span><span class="p">,</span> <span class="nx">key</span><span class="p">,</span> <span class="nx">value</span><span class="p">,</span> <span class="nx">matches</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+        <span class="k">switch</span> <span class="p">(</span><span class="nx">values</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="mi">0</span><span class="o">:</span> <span class="k">return</span> <span class="kc">undefined</span><span class="p">;</span>
+            <span class="k">case</span> <span class="mi">1</span><span class="o">:</span> <span class="k">return</span> <span class="nx">values</span><span class="p">;</span>
+            <span class="k">default</span><span class="o">:</span> <span class="k">return</span> <span class="nx">values</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">buildSelect</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">arel</span><span class="p">,</span> <span class="nx">selects</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">table</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">isEmpty</span><span class="p">(</span><span class="nx">selects</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">arel</span><span class="p">.</span><span class="nx">project</span><span class="p">(</span><span class="k">new</span> <span class="nx">nodes</span><span class="p">.</span><span class="nx">SqlLiteral</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">klass</span><span class="p">.</span><span class="nx">quotedTableName</span><span class="p">()</span> <span class="o">+</span> <span class="s1">&#39;.*&#39;</span><span class="p">));</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">arel</span><span class="p">.</span><span class="nx">project</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">compact</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">flatten</span><span class="p">([</span><span class="nx">selects</span><span class="p">])),</span> <span class="kd">function</span><span class="p">(</span><span class="nx">val</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="kc">undefined</span> <span class="o">!==</span> <span class="nx">val</span><span class="p">.</span><span class="nx">class_name</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="nx">val</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">val</span><span class="p">);</span>
+        <span class="p">}));</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">reverseOrder</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">order_clause</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">arel</span><span class="p">().</span><span class="nx">order_clauses</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">order</span><span class="p">;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">isEmpty</span><span class="p">(</span><span class="nx">order_clause</span><span class="p">))</span> <span class="p">{</span>
+        <span class="nx">order</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">klass</span><span class="p">.</span><span class="nx">tableName</span><span class="p">()</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span> <span class="o">+</span> <span class="k">this</span><span class="p">.</span><span class="nx">klass</span><span class="p">.</span><span class="nx">primary_key</span> <span class="o">+</span> <span class="s1">&#39; DESC&#39;</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="nx">order</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">reverseSqlOrder</span><span class="p">(</span><span class="nx">order_clause</span><span class="p">).</span><span class="nx">join</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">except</span><span class="p">(</span><span class="s1">&#39;order&#39;</span><span class="p">).</span><span class="nx">order</span><span class="p">(</span><span class="nx">order</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">reverseSqlOrder</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">order_query</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">order_query</span> <span class="o">=</span> <span class="nx">order_query</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s1">&#39;, &#39;</span><span class="p">).</span><span class="nx">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">);</span>
+    <span class="k">return</span> <span class="nx">_</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">order_query</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">s</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">s</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/\s(asc|desc)$/i</span><span class="p">)</span> <span class="o">===</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">s</span> <span class="o">=</span> <span class="nx">s</span><span class="p">.</span><span class="nx">concat</span><span class="p">(</span><span class="s1">&#39; DESC&#39;</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="nx">s</span><span class="p">.</span><span class="nx">gsub</span><span class="p">(</span><span class="sr">/\sasc$/i</span><span class="p">,</span> <span class="s1">&#39; DESC&#39;</span><span class="p">);</span>
+            <span class="nx">s</span><span class="p">.</span><span class="nx">gsub</span><span class="p">(</span><span class="sr">/\sdesc$/i</span><span class="p">,</span> <span class="s1">&#39; ASC&#39;</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="nx">s</span><span class="p">;</span>
+    <span class="p">});</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">whereForAttributes</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">table</span><span class="p">,</span> <span class="nx">key</span><span class="p">,</span> <span class="nx">value</span><span class="p">,</span> <span class="nx">matches</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">switch</span> <span class="p">(</span><span class="nx">matches</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="s1">&#39;eq&#39;</span><span class="o">:</span>
+            <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">).</span><span class="nx">eq</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+        <span class="k">case</span> <span class="s1">&#39;not&#39;</span><span class="o">:</span>
+        <span class="k">case</span> <span class="s1">&#39;neq&#39;</span><span class="o">:</span>
+        <span class="k">case</span> <span class="s1">&#39;noteq&#39;</span><span class="o">:</span>
+        <span class="k">case</span> <span class="s1">&#39;notEq&#39;</span><span class="o">:</span>
+            <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">).</span><span class="nx">notEq</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+        <span class="k">case</span> <span class="s1">&#39;gte&#39;</span><span class="o">:</span>
+        <span class="k">case</span> <span class="s1">&#39;gteq&#39;</span><span class="o">:</span>
+        <span class="k">case</span> <span class="s1">&#39;gtEq&#39;</span><span class="o">:</span>
+            <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">).</span><span class="nx">gteq</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+        <span class="k">case</span> <span class="s1">&#39;gt&#39;</span><span class="o">:</span>
+            <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">).</span><span class="nx">gt</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+        <span class="k">case</span> <span class="s1">&#39;lte&#39;</span><span class="o">:</span>
+        <span class="k">case</span> <span class="s1">&#39;lteq&#39;</span><span class="o">:</span>
+        <span class="k">case</span> <span class="s1">&#39;ltEq&#39;</span><span class="o">:</span>
+            <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">).</span><span class="nx">lteq</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+        <span class="k">case</span> <span class="s1">&#39;lt&#39;</span><span class="o">:</span>
+            <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">).</span><span class="nx">lt</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+        <span class="k">case</span> <span class="s1">&#39;like&#39;</span><span class="o">:</span>
+            <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">).</span><span class="nx">matches</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+        <span class="k">case</span> <span class="s1">&#39;nlike&#39;</span><span class="o">:</span>
+        <span class="k">case</span> <span class="s1">&#39;notlike&#39;</span><span class="o">:</span>
+        <span class="k">case</span> <span class="s1">&#39;notLike&#39;</span><span class="o">:</span>
+            <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">).</span><span class="nx">doesNotMatch</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+        <span class="k">case</span> <span class="s1">&#39;in&#39;</span><span class="o">:</span>
+            <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">).</span><span class="k">in</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+        <span class="k">case</span> <span class="s1">&#39;nin&#39;</span><span class="o">:</span>
+        <span class="k">case</span> <span class="s1">&#39;notin&#39;</span><span class="o">:</span>
+        <span class="k">case</span> <span class="s1">&#39;notIn&#39;</span><span class="o">:</span>
+            <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">).</span><span class="nx">notIn</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+        <span class="k">default</span><span class="o">:</span>
+            <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">).</span><span class="nx">eq</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

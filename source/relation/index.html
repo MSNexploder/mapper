@@ -1,0 +1,291 @@
+<!DOCTYPE html>  <html> <head>   <title>index.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="calculations.html">                 calculations.js               </a>                                           <a class="source" href="finder_methods.html">                 finder_methods.js               </a>                                           <a class="source" href="index.html">                 index.js               </a>                                           <a class="source" href="query_methods.html">                 query_methods.js               </a>                                           <a class="source" href="spawn_methods.html">                 spawn_methods.js               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               index.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <p>Module dependencies.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">util</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;util&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">EventEmitter</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;events&#39;</span><span class="p">).</span><span class="nx">EventEmitter</span><span class="p">;</span>
+<span class="kd">var</span> <span class="nx">_</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;underscore&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">nodes</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;../nodes&#39;</span><span class="p">);</span>
+
+<span class="kd">var</span> <span class="nx">Relation</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">klass</span><span class="p">,</span> <span class="nx">table</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">self</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">klass</span> <span class="o">=</span> <span class="nx">klass</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">table</span> <span class="o">=</span> <span class="nx">table</span><span class="p">;</span>
+
+    <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">Relation</span><span class="p">.</span><span class="nx">single_value_methods</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">self</span><span class="p">[</span><span class="nx">value</span> <span class="o">+</span> <span class="s1">&#39;_value&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">undefined</span><span class="p">;</span>
+    <span class="p">});</span>
+
+    <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">Relation</span><span class="p">.</span><span class="nx">multi_value_methods</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">self</span><span class="p">[</span><span class="nx">value</span> <span class="o">+</span> <span class="s1">&#39;_values&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[];</span>
+    <span class="p">});</span>
+<span class="p">};</span>
+
+<span class="nx">util</span><span class="p">.</span><span class="nx">inherits</span><span class="p">(</span><span class="nx">Relation</span><span class="p">,</span> <span class="nx">EventEmitter</span><span class="p">);</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">Relation</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>TODO maybe needs cleanup</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Relation</span><span class="p">.</span><span class="nx">multi_value_methods</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;select&#39;</span><span class="p">,</span> <span class="s1">&#39;group&#39;</span><span class="p">,</span> <span class="s1">&#39;order&#39;</span><span class="p">,</span> <span class="s1">&#39;joins&#39;</span><span class="p">,</span> <span class="s1">&#39;where&#39;</span><span class="p">,</span> <span class="s1">&#39;having&#39;</span><span class="p">,</span> <span class="s1">&#39;bind&#39;</span><span class="p">];</span>
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">single_value_methods</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;limit&#39;</span><span class="p">,</span> <span class="s1">&#39;offset&#39;</span><span class="p">,</span> <span class="s1">&#39;lock&#39;</span><span class="p">,</span> <span class="s1">&#39;readonly&#39;</span><span class="p">,</span> <span class="s1">&#39;create_with&#39;</span><span class="p">,</span> <span class="s1">&#39;from&#39;</span><span class="p">];</span>
+
+<span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./query_methods&#39;</span><span class="p">);</span>
+<span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./spawn_methods&#39;</span><span class="p">);</span>
+<span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./finder_methods&#39;</span><span class="p">);</span>
+<span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./calculations&#39;</span><span class="p">);</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">toSql</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">_sql</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">_sql</span> <span class="o">||</span> <span class="k">this</span><span class="p">.</span><span class="nx">arel</span><span class="p">().</span><span class="nx">toSql</span><span class="p">();</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_sql</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">execute</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">self</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">connection</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">connection</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">fun</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">rows</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">self</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="nx">error</span><span class="p">);</span>
+            <span class="k">return</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="kd">var</span> <span class="nx">new_rows</span> <span class="o">=</span> <span class="p">[];</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">rows</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">new_rows</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="o">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">createObjectFromHash</span><span class="p">(</span><span class="nx">rows</span><span class="p">[</span><span class="nx">i</span><span class="p">]);</span> <span class="c1">// TODO</span>
+            <span class="nx">self</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;row&#39;</span><span class="p">,</span> <span class="nx">new_rows</span><span class="p">[</span><span class="nx">i</span><span class="p">]);</span>
+        <span class="p">}</span>
+
+        <span class="nx">self</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;row&#39;</span><span class="p">,</span> <span class="kc">undefined</span><span class="p">);</span>
+        <span class="nx">self</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;rows&#39;</span><span class="p">,</span> <span class="nx">new_rows</span><span class="p">);</span>
+
+        <span class="nx">self</span><span class="p">.</span><span class="nx">_values</span> <span class="o">=</span> <span class="nx">new_rows</span><span class="p">;</span> <span class="c1">// cache for further calls</span>
+    <span class="p">};</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="kc">undefined</span> <span class="o">===</span> <span class="k">this</span><span class="p">.</span><span class="nx">_values</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">connection</span><span class="p">.</span><span class="nx">execute</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">toSql</span><span class="p">(),</span> <span class="nx">fun</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="nx">process</span><span class="p">.</span><span class="nx">nextTick</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="nx">fun</span><span class="p">(</span><span class="kc">undefined</span><span class="p">,</span> <span class="nx">self</span><span class="p">.</span><span class="nx">_values</span><span class="p">);</span>
+        <span class="p">});</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>Deletes the records matching <code>conditions</code> without instantiating the records first, and hence not
+calling the <code>destroy</code> method nor invoking callbacks. This is a single SQL DELETE statement that
+goes straight to the database. Emits the number of rows affected.</p>
+
+<p>==== Parameters</p>
+
+<ul>
+<li><code>conditions</code> - Conditions are specified the same way as with <code>find</code> method.</li>
+</ul>
+
+<p>==== Emits</p>
+
+<p>Emits a <code>success</code> event if containing the count of deleted records which are successfully deleted.</p>
+
+<p>==== Example</p>
+
+<pre><code>Post.deleteAll("person_id = 5 AND (category = 'Something' OR category = 'Else')");
+Post.deleteAll(["person_id = ? AND (category = ? OR category = ?)", 5, 'Something', 'Else']);
+</code></pre>
+
+<p>Both calls delete the affected posts all at once with a single DELETE statement.</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">deleteAll</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">conditions</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">conditions</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">where</span><span class="p">(</span><span class="nx">conditions</span><span class="p">).</span><span class="nx">deleteAll</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="kd">var</span> <span class="nx">event</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">EventEmitter</span><span class="p">();</span>
+    <span class="kd">var</span> <span class="nx">dm</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">deleteManager</span><span class="p">();</span>
+    <span class="kd">var</span> <span class="nx">self</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+
+    <span class="nx">dm</span><span class="p">.</span><span class="nx">from</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">);</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">uniq</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">where_values</span><span class="p">),</span> <span class="kd">function</span><span class="p">(</span><span class="nx">where</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">dm</span> <span class="o">=</span> <span class="nx">dm</span><span class="p">.</span><span class="nx">where</span><span class="p">(</span><span class="k">new</span> <span class="nx">nodes</span><span class="p">.</span><span class="nx">Grouping</span><span class="p">(</span><span class="nx">self</span><span class="p">.</span><span class="nx">buildWhereClause</span><span class="p">(</span><span class="nx">where</span><span class="p">)));</span>
+    <span class="p">});</span>
+
+    <span class="k">this</span><span class="p">.</span><span class="nx">klass</span><span class="p">.</span><span class="nx">tableConnection</span><span class="p">().</span><span class="k">delete</span><span class="p">(</span><span class="nx">dm</span><span class="p">.</span><span class="nx">toSql</span><span class="p">(),</span> <span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">event</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="nx">error</span><span class="p">);</span>
+            <span class="k">return</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="nx">event</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span> <span class="nx">value</span><span class="p">);</span>
+    <span class="p">});</span>
+
+    <span class="k">return</span> <span class="nx">event</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <p>Deletes the row with a primary key matching the <code>id</code> argument, using a
+SQL <code>DELETE</code> statement, and returns the number of rows deleted.</p>
+
+<p>You can delete multiple rows at once by passing an Array of <code>id</code>s.</p>
+
+<h4>Examples</h4>
+
+<pre><code>// Delete a single row
+Todo.delete(1);
+
+// Delete multiple rows
+Todo.delete([2,3,4]);
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="k">delete</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">id_or_array</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">where_clause</span> <span class="o">=</span> <span class="p">{};</span>
+    <span class="nx">where_clause</span><span class="p">[</span><span class="k">this</span><span class="p">.</span><span class="nx">klass</span><span class="p">.</span><span class="nx">primary_key</span><span class="p">]</span> <span class="o">=</span> <span class="nx">id_or_array</span><span class="p">;</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">where</span><span class="p">(</span><span class="nx">where_clause</span><span class="p">).</span><span class="nx">deleteAll</span><span class="p">();</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">insert</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">values</span><span class="p">,</span> <span class="nx">fun</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">im</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">insertManager</span><span class="p">();</span>
+    <span class="kd">var</span> <span class="nx">table</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">isString</span><span class="p">(</span><span class="nx">values</span><span class="p">))</span> <span class="p">{</span>
+        <span class="nx">values</span> <span class="o">=</span> <span class="nx">nodes</span><span class="p">.</span><span class="nx">sql</span><span class="p">(</span><span class="nx">values</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="nx">values</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">values</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="p">[</span><span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">),</span> <span class="nx">value</span><span class="p">];</span>
+        <span class="p">});</span>
+    <span class="p">}</span>
+    <span class="nx">im</span><span class="p">.</span><span class="nx">into</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">);</span>
+    <span class="nx">im</span><span class="p">.</span><span class="nx">insert</span><span class="p">(</span><span class="nx">values</span><span class="p">);</span>
+
+    <span class="k">this</span><span class="p">.</span><span class="nx">klass</span><span class="p">.</span><span class="nx">tableConnection</span><span class="p">().</span><span class="nx">insert</span><span class="p">(</span><span class="nx">im</span><span class="p">.</span><span class="nx">toSql</span><span class="p">(),</span> <span class="nx">fun</span><span class="p">,</span> <span class="s1">&#39;SQL&#39;</span><span class="p">);</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <p>Updates all records with details given if they match a set of conditions supplied, limits and order can
+also be supplied. This method constructs a single SQL UPDATE statement and sends it straight to the
+database.</p>
+
+<h4>Parameters</h4>
+
+<ul>
+<li><code>updates</code> - A string, array, or hash representing the SET part of an SQL statement.</li>
+<li><code>conditions</code> - A string, array, or hash representing the WHERE part of an SQL statement.
+See conditions in the intro.</li>
+<li><code>options</code> - Additional options are <code>limit</code> and <code>order</code>, see the examples for usage.</li>
+</ul>
+
+<h4>Emits</h4>
+
+<p>Emits <code>success</code>, passing the count of all successfully updated records.</p>
+
+<h4>Examples</h4>
+
+<pre><code># Update all customers with the given attributes
+Customer.update_all({wants_email: true});
+
+# Update all books with 'Mapper' in their title
+Book.update_all(["author = 'Stefan'", "title LIKE '%Mapper%'"]);
+
+# Update all avatars migrated more than a week ago
+Avatar.update_all([['migrated_at = ?', Time.now.utc], ['migrated_at &gt; ?', 1.week.ago]]);
+
+# Update all books that match conditions, but limit it to 5 ordered by date
+Book.update_all(["author = 'Stefan'", "title LIKE '%Mapper%'"], {order: 'created_at', limit: 5});
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">updateAll</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">updates</span><span class="p">,</span> <span class="nx">conditions</span><span class="p">,</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">conditions</span> <span class="o">||</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">where</span><span class="p">(</span><span class="nx">conditions</span><span class="p">).</span><span class="nx">applyFinderOptions</span><span class="p">(</span><span class="nx">options</span><span class="p">).</span><span class="nx">updateAll</span><span class="p">(</span><span class="nx">updates</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="kd">var</span> <span class="nx">event</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">EventEmitter</span><span class="p">();</span>
+
+    <span class="kd">var</span> <span class="nx">um</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">updateManager</span><span class="p">();</span>
+    <span class="nx">um</span><span class="p">.</span><span class="nx">table</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">);</span>
+    <span class="nx">um</span><span class="p">.</span><span class="nx">order</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">order_values</span><span class="p">);</span>
+    <span class="nx">um</span><span class="p">.</span><span class="nx">where</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">where_values</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">limit_value</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">um</span><span class="p">.</span><span class="nx">take</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">limit_value</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="nx">um</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">klass</span><span class="p">.</span><span class="nx">sanitizeSqlForAssignment</span><span class="p">(</span><span class="nx">updates</span><span class="p">));</span>
+
+    <span class="k">this</span><span class="p">.</span><span class="nx">klass</span><span class="p">.</span><span class="nx">tableConnection</span><span class="p">().</span><span class="nx">update</span><span class="p">(</span><span class="nx">um</span><span class="p">.</span><span class="nx">toSql</span><span class="p">(),</span> <span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">event</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="nx">error</span><span class="p">);</span>
+            <span class="k">return</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="nx">event</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span> <span class="nx">value</span><span class="p">);</span>
+    <span class="p">});</span>
+
+    <span class="k">return</span> <span class="nx">event</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-6">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-6">&#182;</a>               </div>               <p>Updates an object (or multiple objects) and saves it to the database.
+Will emit 'success' with the updated object if successfully saved.</p>
+
+<h4>Parameters</h4>
+
+<ul>
+<li><code>id</code> - This should be the id or an array of ids to be updated.</li>
+<li><code>attributes</code> - This should be a hash of attributes or an array of hashes.</li>
+</ul>
+
+<h4>Examples</h4>
+
+<pre><code>// Updates one record
+Person.update(15, {user_name: 'Samuel', group: 'expert'});
+
+// Updates multiple records
+people = { 1: { first_name: "David" }, 2: { first_name: "Jeremy" } };
+Person.update(_.keys(people), _.values(people));
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">update</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">ids</span><span class="p">,</span> <span class="nx">values</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">self</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">event</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">EventEmitter</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">isArray</span><span class="p">(</span><span class="nx">ids</span><span class="p">))</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">length</span> <span class="o">=</span> <span class="nx">ids</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
+        <span class="kd">var</span> <span class="nx">vals</span> <span class="o">=</span> <span class="p">[];</span>
+        <span class="kd">var</span> <span class="nx">counter</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">ids</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">update</span> <span class="o">=</span> <span class="nx">self</span><span class="p">.</span><span class="nx">update</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span> <span class="nx">values</span><span class="p">[</span><span class="nx">counter</span><span class="p">]);</span>
+            <span class="nx">counter</span> <span class="o">+=</span> <span class="mi">1</span><span class="p">;</span>
+            <span class="nx">update</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">val</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">length</span> <span class="o">-=</span> <span class="mi">1</span><span class="p">;</span>
+                <span class="nx">vals</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">val</span><span class="p">);</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">length</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="nx">event</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span> <span class="nx">vals</span><span class="p">);</span>
+                <span class="p">}</span>
+            <span class="p">});</span>
+            <span class="nx">update</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">length</span> <span class="o">-=</span> <span class="mi">1</span><span class="p">;</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">length</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="nx">event</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span> <span class="nx">vals</span><span class="p">);</span>
+                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                    <span class="nx">event</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="nx">error</span><span class="p">);</span>
+                <span class="p">}</span>
+            <span class="p">});</span>
+        <span class="p">});</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">um</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">updateManager</span><span class="p">();</span>
+        <span class="nx">um</span><span class="p">.</span><span class="nx">table</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">);</span>
+        <span class="nx">um</span><span class="p">.</span><span class="nx">where</span><span class="p">(</span><span class="nx">self</span><span class="p">.</span><span class="nx">primaryKey</span><span class="p">().</span><span class="nx">eq</span><span class="p">(</span><span class="nx">ids</span><span class="p">));</span>
+
+        <span class="nx">um</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="nx">_</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">values</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="p">[</span><span class="nx">self</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">),</span> <span class="nx">value</span><span class="p">];</span>
+        <span class="p">}));</span>
+
+        <span class="k">this</span><span class="p">.</span><span class="nx">klass</span><span class="p">.</span><span class="nx">tableConnection</span><span class="p">().</span><span class="nx">update</span><span class="p">(</span><span class="nx">um</span><span class="p">.</span><span class="nx">toSql</span><span class="p">(),</span> <span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">,</span> <span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">event</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="nx">error</span><span class="p">);</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="nx">event</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span> <span class="nx">value</span><span class="p">);</span>
+        <span class="p">});</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="nx">event</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">primaryKey</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">_primary_key</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">_primary_key</span> <span class="o">||</span> <span class="k">this</span><span class="p">.</span><span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">klass</span><span class="p">.</span><span class="nx">primary_key</span><span class="p">);</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_primary_key</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">clone</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">relation</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">clone</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+    <span class="k">delete</span> <span class="nx">relation</span><span class="p">.</span><span class="nx">_sql</span><span class="p">;</span>
+    <span class="k">delete</span> <span class="nx">relation</span><span class="p">.</span><span class="nx">_arel</span><span class="p">;</span>
+    <span class="k">delete</span> <span class="nx">relation</span><span class="p">.</span><span class="nx">_values</span><span class="p">;</span>
+    <span class="k">return</span> <span class="nx">relation</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">whereValuesHash</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">values</span> <span class="o">=</span> <span class="p">{};</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">where_values</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">where</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">values</span><span class="p">[</span><span class="nx">where</span><span class="p">.</span><span class="nx">left</span><span class="p">.</span><span class="nx">name</span><span class="p">]</span> <span class="o">=</span> <span class="nx">where</span><span class="p">.</span><span class="nx">right</span><span class="p">;</span>
+    <span class="p">});</span>
+    <span class="k">return</span> <span class="nx">values</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">scopeForCreate</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">_scope_for_create</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">_scope_for_create</span> <span class="o">||</span> <span class="k">this</span><span class="p">.</span><span class="nx">whereValuesHash</span><span class="p">();</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_scope_for_create</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-7">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-7">&#182;</a>               </div>               <p>TODO only add columns defined in model</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Relation</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">createObjectFromHash</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">hash</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">base</span> <span class="o">=</span> <span class="k">new</span> <span class="k">this</span><span class="p">.</span><span class="nx">klass</span><span class="p">();</span>
+    <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">hash</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">base</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span> <span class="o">=</span> <span class="nx">value</span><span class="p">;</span>
+    <span class="p">});</span>
+    <span class="nx">base</span><span class="p">.</span><span class="nx">_new_record</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="k">return</span> <span class="nx">base</span><span class="p">;</span>
+<span class="p">};</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

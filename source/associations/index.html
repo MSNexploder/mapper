@@ -1,0 +1,280 @@
+<!DOCTYPE html>  <html> <head>   <title>index.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="association.html">                 association.js               </a>                                           <a class="source" href="association_collection.html">                 association_collection.js               </a>                                           <a class="source" href="belongs_to_association.html">                 belongs_to_association.js               </a>                                           <a class="source" href="has_many_association.html">                 has_many_association.js               </a>                                           <a class="source" href="has_one_association.html">                 has_one_association.js               </a>                                           <a class="source" href="index.html">                 index.js               </a>                                           <a class="source" href="reflection.html">                 reflection.js               </a>                                           <a class="source" href="singular_association.html">                 singular_association.js               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               index.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>                            </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">util</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;util&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">_</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;underscore&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">AssociationReflection</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./reflection&#39;</span><span class="p">).</span><span class="nx">AssociationReflection</span><span class="p">;</span>
+
+<span class="kd">var</span> <span class="nx">Associations</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{};</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">Associations</span><span class="p">;</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>TODO maybe add dynamic search to relations (if possible) by simply executing parent internally</p>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>Specifies a one-to-many association. The following methods for retrieval and query of
+collections of associated objects will be added:</p>
+
+<ul>
+<li>collection
+Returns an array of all the associated objects.
+An empty array is returned if none are found.</li>
+<li>collection.push([object, ...])
+Adds one or more objects to the collection by setting their foreign keys to the collection's primary key.
+Note that this operation instantly fires update sql without waiting for the save or update call on the
+parent object.</li>
+<li><p>collection.delete([object, ...])
+Removes one or more objects from the collection by setting their foreign keys to +NULL+.
+Objects will be in addition destroyed if they're associated with <code>:dependent =&gt; :destroy</code>,
+and deleted if they're associated with <code>:dependent =&gt; :delete_all</code>.</p>
+
+<p>If the <code>:through</code> option is used, then the join records are deleted (rather than
+nullified) by default, but you can specify <code>:dependent =&gt; :destroy</code> or
+<code>:dependent =&gt; :nullify</code> to override this.</p></li>
+<li>collection = objects
+Replaces the collections content by deleting and adding objects as appropriate. If the <code>:through</code>
+option is true callbacks in the join models are triggered except destroy callbacks, since deletion is
+direct.</li>
+<li>collection.clear()
+Removes every object from the collection. This destroys the associated objects if they
+are associated with <code>:dependent =&gt; :destroy</code>, deletes them directly from the
+database if <code>:dependent =&gt; :delete_all</code>, otherwise sets their foreign keys to <code>NULL</code>.
+If the <code>:through</code> option is true no destroy callbacks are invoked on the join models.
+Join models are directly deleted.</li>
+<li>collection.length
+Returns the number of associated objects.</li>
+<li>collection.find(...)
+Finds an associated object according to the same rules as Base.find.</li>
+<li>collection.exists(...)
+Checks whether an associated object with the given conditions exists.
+Uses the same rules as Base.exists.</li>
+<li>collection.build(attributes = {}, ...)
+Returns one or more new objects of the collection type that have been instantiated
+with <code>attributes</code> and linked to this object through a foreign key, but have not yet
+been saved.</li>
+<li>collection.create(attributes = {})
+Returns a new object of the collection type that has been instantiated
+with <code>attributes</code>, linked to this object through a foreign key, and that has already
+been saved (if it passed the validation). <em>Note</em>: This only works if the base model
+already exists in the DB, not if it is a new (unsaved) record!</li>
+</ul>
+
+<p>(<em>Note</em>: <code>collection</code> is replaced with the symbol passed as the first argument, so
+<code>has_many :clients</code> would add among others <code>clients.empty?</code>.)</p>
+
+<p>=== Example</p>
+
+<p>Example: A Firm class declares <code>has_many :clients</code>, which will add:
+* <code>Firm#clients</code> (similar to <code>Clients.find :all, :conditions =&gt; ["firm_id = ?", id]</code>)
+* <code>Firm#clients&lt;&lt;</code>
+* <code>Firm#clients.delete</code>
+* <code>Firm#clients=</code>
+* <code>Firm#client_ids</code>
+* <code>Firm#client_ids=</code>
+* <code>Firm#clients.clear</code>
+* <code>Firm#clients.empty?</code> (similar to <code>firm.clients.size == 0</code>)
+* <code>Firm#clients.size</code> (similar to <code>Client.count "firm_id = #{id}"</code>)
+* <code>Firm#clients.find</code> (similar to <code>Client.find(id, :conditions =&gt; "firm_id = #{id}")</code>)
+* <code>Firm#clients.exists?(:name =&gt; 'ACME')</code> (similar to <code>Client.exists?(:name =&gt; 'ACME', :firm_id =&gt; firm.id)</code>)
+* <code>Firm#clients.build</code> (similar to <code>Client.new("firm_id" =&gt; id)</code>)
+* <code>Firm#clients.create</code> (similar to <code>c = Client.new("firm_id" =&gt; id); c.save; c</code>)
+The declaration can also include an options hash to specialize the behavior of the association.</p>
+
+<p>=== Options
+[:class<em>name]
+  Specify the class name of the association. Use it only if that name can't be inferred
+  from the association name. So <code>has_many :products</code> will by default be linked
+  to the Product class, but if the real class name is SpecialProduct, you'll have to
+  specify it with this option.
+[:conditions]
+  Specify the conditions that the associated objects must meet in order to be included as a +WHERE+
+  SQL fragment, such as <code>price &gt; 5 AND name LIKE 'B%'</code>.  Record creations from
+  the association are scoped if a hash is used.
+  <code>has_many :posts, :conditions =&gt; {:published =&gt; true}</code> will create published
+  posts with <code>@blog.posts.create</code> or <code>@blog.posts.build</code>.
+[:order]
+  Specify the order in which the associated objects are returned as an <code>ORDER BY</code> SQL fragment,
+  such as <code>last_name, first_name DESC</code>.
+[:foreign</em>key]
+  Specify the foreign key used for the association. By default this is guessed to be the name
+  of this class in lower-case and "<em>id" suffixed. So a Person class that makes a +has</em>many+
+  association will use "person<em>id" as the default <code>:foreign_key</code>.
+[:primary</em>key]
+  Specify the method that returns the primary key used for the association. By default this is +id+.
+[:dependent]
+  If set to <code>:destroy</code> all the associated objects are destroyed
+  alongside this object by calling their +destroy+ method.  If set to <code>:delete_all</code> all associated
+  objects are deleted <em>without</em> calling their +destroy+ method.  If set to <code>:nullify</code> all associated
+  objects' foreign keys are set to +NULL+ <em>without</em> calling their +save+ callbacks. If set to
+  <code>:restrict</code> this object cannot be deleted if it has any associated object.</p>
+
+<p>If using with the <code>:through</code> option, the association on the join model must be
+  a +belongs_to+, and the records which get deleted are the join records, rather than
+  the associated records.</p>
+
+<p>[:finder<em>sql]
+  Specify a complete SQL statement to fetch the association. This is a good way to go for complex
+  associations that depend on multiple tables. Note: When this option is used, +find</em>in<em>collection+
+  is _not</em> added.
+[:counter_sql]
+  Specify a complete SQL statement to fetch the size of the association. If <code>:finder_sql</code> is
+  specified but not <code>:counter_sql</code>, <code>:counter_sql</code> will be generated by
+  replacing <code>SELECT ... FROM</code> with <code>SELECT COUNT(*) FROM</code>.
+[:extend]
+  Specify a named module for extending the proxy. See "Association extensions".
+[:include]
+  Specify second-order associations that should be eager loaded when the collection is loaded.
+[:group]
+  An attribute name by which the result should be grouped. Uses the <code>GROUP BY</code> SQL-clause.
+[:having]
+  Combined with +:group+ this can be used to filter the records that a <code>GROUP BY</code>
+  returns. Uses the <code>HAVING</code> SQL-clause.
+[:limit]
+  An integer determining the limit on the number of rows that should be returned.
+[:offset]
+  An integer determining the offset from where the rows should be fetched. So at 5,
+  it would skip the first 4 rows.
+[:select]
+  By default, this is <code>*</code> as in <code>SELECT * FROM</code>, but can be changed if
+  you, for example, want to do a join but not include the joined columns. Do not forget
+  to include the primary and foreign keys, otherwise it will raise an error.
+[:as]
+  Specifies a polymorphic interface (See <code>belongs_to</code>).
+[:through]
+  Specifies a join model through which to perform the query.  Options for <code>:class_name</code>,
+  <code>:primary_key</code> and <code>:foreign_key</code> are ignored, as the association uses the
+  source reflection. You can only use a <code>:through</code> query through a <code>belongs_to</code>,
+  <code>has_one</code> or <code>has_many</code> association on the join model.</p>
+
+<p>If the association on the join model is a +belongs_to+, the collection can be modified
+  and the records on the <code>:through</code> model will be automatically created and removed
+  as appropriate. Otherwise, the collection is read-only, so you should manipulate the
+  <code>:through</code> association directly.</p>
+
+<p>If you are going to modify the association (rather than just read from it), then it is
+  a good idea to set the <code>:inverse_of</code> option on the source association on the
+  join model. This allows associated records to be built which will automatically create
+  the appropriate join model records when they are saved. (See the 'Association Join Models'
+  section above.)
+[:source]
+  Specifies the source association name used by <code>has_many :through</code> queries.
+  Only use it if the name cannot be inferred from the association.
+  <code>has_many :subscribers, :through =&gt; :subscriptions</code> will look for either <code>:subscribers</code> or
+  <code>:subscriber</code> on Subscription, unless a <code>:source</code> is given.
+[:source<em>type]
+  Specifies type of the source association used by <code>has_many :through</code> queries where the source
+  association is a polymorphic +belongs</em>to+.
+[:uniq]
+  If true, duplicates will be omitted from the collection. Useful in conjunction with <code>:through</code>.
+[:readonly]
+  If true, all the associated objects are readonly through the association.
+[:validate]
+  If +false+, don't validate the associated objects when saving the parent object. true by default.
+[:autosave]
+  If true, always save the associated objects or destroy them if marked for destruction,
+  when saving the parent object. If false, never save or destroy the associated objects.
+  By default, only save associated objects that are new records.
+[:inverse_of]
+  Specifies the name of the <code>belongs_to</code> association on the associated object
+  that is the inverse of this <code>has_many</code> association. Does not work in combination
+  with <code>:through</code> or <code>:as</code> options.
+  See ActiveRecord::Associations::ClassMethods's overview on Bi-directional associations for more detail.</p>
+
+<p>Option examples:
+    has<em>many :comments, :order => "posted</em>on"
+    has<em>many :comments, :include => :author
+    has</em>many :people, :class<em>name => "Person", :conditions => "deleted = 0", :order => "name"
+    has</em>many :tracks, :order => "position", :dependent => :destroy
+    has<em>many :comments, :dependent => :nullify
+    has</em>many :tags, :as => :taggable
+    has<em>many :reports, :readonly => true
+    has</em>many :subscribers, :through => :subscriptions, :source => :user
+    has<em>many :subscribers, :class</em>name => "Person", :finder<em>sql =>
+        'SELECT DISTINCT people.* ' +
+        'FROM people p, post</em>subscriptions ps ' +
+        'WHERE ps.post<em>id = #{id} AND ps.person</em>id = p.id ' +
+        'ORDER BY p.first_name'</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Associations</span><span class="p">.</span><span class="nx">hasMany</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">association_name</span><span class="p">,</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">options</span> <span class="o">=</span> <span class="nx">options</span> <span class="o">||</span> <span class="p">{};</span>
+
+    <span class="kd">var</span> <span class="nx">reflection</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">createReflection</span><span class="p">(</span><span class="s1">&#39;has_many&#39;</span><span class="p">,</span> <span class="nx">association_name</span><span class="p">,</span> <span class="nx">options</span><span class="p">);</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">collectionAccessorMethods</span><span class="p">(</span><span class="nx">reflection</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="nx">Associations</span><span class="p">.</span><span class="nx">hasOne</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">association_name</span><span class="p">,</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">options</span> <span class="o">=</span> <span class="nx">options</span> <span class="o">||</span> <span class="p">{};</span>
+
+    <span class="kd">var</span> <span class="nx">reflection</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">createReflection</span><span class="p">(</span><span class="s1">&#39;has_one&#39;</span><span class="p">,</span> <span class="nx">association_name</span><span class="p">,</span> <span class="nx">options</span><span class="p">);</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">associationConstructorMethods</span><span class="p">(</span><span class="nx">reflection</span><span class="p">);</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">associationAccessorMethods</span><span class="p">(</span><span class="nx">reflection</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="nx">Associations</span><span class="p">.</span><span class="nx">belongsTo</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">association_name</span><span class="p">,</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">options</span> <span class="o">=</span> <span class="nx">options</span> <span class="o">||</span> <span class="p">{};</span>
+
+    <span class="kd">var</span> <span class="nx">reflection</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">createReflection</span><span class="p">(</span><span class="s1">&#39;belongs_to&#39;</span><span class="p">,</span> <span class="nx">association_name</span><span class="p">,</span> <span class="nx">options</span><span class="p">);</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">associationAccessorMethods</span><span class="p">(</span><span class="nx">reflection</span><span class="p">);</span>
+
+    <span class="k">this</span><span class="p">.</span><span class="nx">defineColumn</span><span class="p">(</span><span class="nx">reflection</span><span class="p">.</span><span class="nx">foreignKey</span><span class="p">(),</span> <span class="s1">&#39;foreign_key&#39;</span><span class="p">,</span> <span class="nx">options</span><span class="p">);</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <p>Returns the AssociationReflection object for the <code>association</code>.</p>
+
+<pre><code>Account.reflectOnAssociation('owner');             // returns the owner AssociationReflection
+Invoice.reflectOnAssociation('line_items').macro   // returns `has_many`
+</code></pre>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Associations</span><span class="p">.</span><span class="nx">reflectOnAssociation</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">association</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">reflections</span><span class="p">[</span><span class="nx">association</span><span class="p">]</span> <span class="o">?</span> <span class="k">this</span><span class="p">.</span><span class="nx">reflections</span><span class="p">[</span><span class="nx">association</span><span class="p">]</span> <span class="o">:</span> <span class="kc">undefined</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <p>private methods</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Associations</span><span class="p">.</span><span class="nx">createReflection</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">macro</span><span class="p">,</span> <span class="nx">association_name</span><span class="p">,</span> <span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">reflection</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">AssociationReflection</span><span class="p">(</span><span class="nx">macro</span><span class="p">,</span> <span class="nx">association_name</span><span class="p">,</span> <span class="nx">options</span><span class="p">,</span> <span class="k">this</span><span class="p">);</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">reflections</span><span class="p">[</span><span class="nx">association_name</span><span class="p">]</span> <span class="o">=</span> <span class="nx">reflection</span><span class="p">;</span>
+    <span class="k">return</span> <span class="nx">reflection</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Associations</span><span class="p">.</span><span class="nx">collectionAccessorMethods</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">reflection</span><span class="p">,</span> <span class="nx">writer</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">writer</span> <span class="o">=</span> <span class="nx">writer</span> <span class="o">||</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">class_name</span> <span class="o">=</span> <span class="nx">reflection</span><span class="p">.</span><span class="nx">association_name</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">collectionReaderMethod</span><span class="p">(</span><span class="nx">reflection</span><span class="p">);</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nx">writer</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">__defineSetter__</span><span class="p">(</span><span class="nx">class_name</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">val</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">association</span><span class="p">(</span><span class="nx">reflection</span><span class="p">).</span><span class="nx">replace</span><span class="p">(</span><span class="nx">val</span><span class="p">);</span>
+        <span class="p">});</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="nx">Associations</span><span class="p">.</span><span class="nx">associationConstructorMethods</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">reflection</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">self</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">class_name</span> <span class="o">=</span> <span class="nx">reflection</span><span class="p">.</span><span class="nx">association_name</span><span class="p">;</span>
+
+    <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">([</span><span class="s1">&#39;build&#39;</span><span class="p">,</span> <span class="s1">&#39;create&#39;</span><span class="p">],</span> <span class="kd">function</span><span class="p">(</span><span class="nx">val</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">self</span><span class="p">.</span><span class="nx">prototype</span><span class="p">[</span><span class="nx">val</span> <span class="o">+</span> <span class="nx">_</span><span class="p">.</span><span class="nx">capitalize</span><span class="p">(</span><span class="nx">class_name</span><span class="p">)]</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">association</span><span class="p">(</span><span class="nx">reflection</span><span class="p">)[</span><span class="nx">val</span><span class="p">](</span><span class="nx">arguments</span><span class="p">);</span>
+        <span class="p">};</span>
+    <span class="p">});</span>
+<span class="p">};</span>
+
+<span class="nx">Associations</span><span class="p">.</span><span class="nx">collectionReaderMethod</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">reflection</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">class_name</span> <span class="o">=</span> <span class="nx">reflection</span><span class="p">.</span><span class="nx">association_name</span><span class="p">;</span>
+
+    <span class="k">this</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">__defineGetter__</span><span class="p">(</span><span class="nx">class_name</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">association</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">association</span><span class="p">(</span><span class="nx">reflection</span><span class="p">);</span>
+        <span class="kd">var</span> <span class="nx">reloaded</span> <span class="o">=</span> <span class="nx">association</span><span class="p">.</span><span class="nx">reload</span><span class="p">();</span>
+        <span class="k">if</span> <span class="p">(</span><span class="kc">undefined</span> <span class="o">!==</span> <span class="nx">reloaded</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">association</span><span class="p">.</span><span class="nx">target</span><span class="p">;</span> <span class="c1">// TODO need a way to delegate</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+<span class="p">};</span>
+
+<span class="nx">Associations</span><span class="p">.</span><span class="nx">associationAccessorMethods</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">reflection</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">class_name</span> <span class="o">=</span> <span class="nx">reflection</span><span class="p">.</span><span class="nx">association_name</span><span class="p">;</span>
+
+    <span class="k">this</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">__defineGetter__</span><span class="p">(</span><span class="nx">class_name</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">association</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">association</span><span class="p">(</span><span class="nx">reflection</span><span class="p">);</span>
+        <span class="kd">var</span> <span class="nx">reloaded</span> <span class="o">=</span> <span class="nx">association</span><span class="p">.</span><span class="nx">reload</span><span class="p">();</span>
+        <span class="k">if</span> <span class="p">(</span><span class="kc">undefined</span> <span class="o">!==</span> <span class="nx">reloaded</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="nx">association</span><span class="p">.</span><span class="nx">target</span><span class="p">;</span> <span class="c1">// TODO need a way to delegate</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+
+    <span class="k">this</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">__defineSetter__</span><span class="p">(</span><span class="nx">class_name</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">val</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">association</span><span class="p">(</span><span class="nx">reflection</span><span class="p">).</span><span class="nx">replace</span><span class="p">(</span><span class="nx">val</span><span class="p">);</span>
+    <span class="p">});</span>
+<span class="p">};</span>
+
+<span class="nx">Associations</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">association</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">reflection</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">proxy_class</span> <span class="o">=</span> <span class="nx">reflection</span><span class="p">.</span><span class="nx">proxyClass</span><span class="p">();</span>
+    <span class="kd">var</span> <span class="nx">proxy</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">proxy_class</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="nx">reflection</span><span class="p">);</span>
+
+    <span class="k">return</span> <span class="nx">proxy</span><span class="p">;</span>
+<span class="p">};</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

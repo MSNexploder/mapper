@@ -1,0 +1,108 @@
+<!DOCTYPE html>  <html> <head>   <title>association.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="association.html">                 association.js               </a>                                           <a class="source" href="association_collection.html">                 association_collection.js               </a>                                           <a class="source" href="belongs_to_association.html">                 belongs_to_association.js               </a>                                           <a class="source" href="has_many_association.html">                 has_many_association.js               </a>                                           <a class="source" href="has_one_association.html">                 has_one_association.js               </a>                                           <a class="source" href="index.html">                 index.js               </a>                                           <a class="source" href="reflection.html">                 reflection.js               </a>                                           <a class="source" href="singular_association.html">                 singular_association.js               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               association.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>                            </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">util</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;util&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">_</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;underscore&#39;</span><span class="p">);</span>
+
+<span class="kd">var</span> <span class="nx">Association</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">owner</span><span class="p">,</span> <span class="nx">reflection</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">owner</span> <span class="o">=</span> <span class="nx">owner</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">target</span> <span class="o">=</span> <span class="kc">undefined</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">reflection</span> <span class="o">=</span> <span class="nx">reflection</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">Association</span><span class="p">;</span>
+
+<span class="nx">Association</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">scoped</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">_association_scope</span> <span class="o">||</span> <span class="k">this</span><span class="p">.</span><span class="nx">associationScope</span><span class="p">();</span> <span class="c1">// TODO</span>
+<span class="p">};</span>
+
+<span class="nx">Association</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">reset</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">target</span> <span class="o">=</span> <span class="kc">undefined</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <p>TODO</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Association</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">reload</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">reset</span><span class="p">();</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">constructScope</span><span class="p">();</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">loadTarget</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="kc">undefined</span> <span class="o">===</span> <span class="k">this</span><span class="p">.</span><span class="nx">target</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="kc">undefined</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Association</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">loadTarget</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">target</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">findTarget</span><span class="p">();</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">target</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Association</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">targetKlass</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">reflection</span><span class="p">.</span><span class="nx">association</span><span class="p">();</span>
+<span class="p">};</span>
+
+<span class="nx">Association</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">targetScope</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">targetKlass</span><span class="p">().</span><span class="nx">scoped</span><span class="p">();</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>def association<em>scope
+ scope = target</em>klass.unscoped
+ scope = scope.create<em>with(creation</em>attributes)
+ scope = scope.apply<em>finder</em>options(@reflection.options.slice(:conditions, :readonly, :include))
+ if select = select<em>value
+   scope = scope.select(select)
+ end
+ scope = scope.extending(*Array.wrap(@reflection.options[:extend]))
+ scope.where(construct</em>owner_conditions)
+end
+TODO</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Association</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">associationScope</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">scope</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">targetKlass</span><span class="p">().</span><span class="nx">scoped</span><span class="p">();</span>
+    <span class="nx">scope</span><span class="p">.</span><span class="nx">applyFinderOptions</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">reflection</span><span class="p">.</span><span class="nx">options</span><span class="p">);</span>
+    
+    <span class="kd">var</span> <span class="nx">ownerConditions</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">constructOwnerConditions</span><span class="p">();</span>
+    <span class="k">return</span> <span class="nx">scope</span><span class="p">.</span><span class="nx">where</span><span class="p">(</span><span class="nx">ownerConditions</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="nx">Association</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">setOwnerAttributes</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">record</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">owner</span><span class="p">.</span><span class="nx">persisted</span><span class="p">())</span> <span class="p">{</span>
+        <span class="nx">_</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">constructOwnerAttributes</span><span class="p">(),</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">record</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span> <span class="o">=</span> <span class="nx">value</span><span class="p">;</span>
+        <span class="p">});</span>
+    <span class="p">}</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <h1>Returns a hash linking the owner to the association represented by the reflection</h1>
+
+<p>def construct<em>owner</em>attributes(reflection = @reflection)
+ attributes = {}
+ if reflection.macro == :belongs<em>to
+   attributes[reflection.association</em>primary<em>key] = @owner[reflection.foreign</em>key]
+ else
+   attributes[reflection.foreign<em>key] = @owner[reflection.active</em>record<em>primary</em>key]</p>
+
+<p>if reflection.options[:as]
+     attributes["#{reflection.options[:as]}<em>type"] = @owner.class.base</em>class.name
+   end
+ end
+ attributes
+end
+TODO</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Association</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">constructOwnerAttributes</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">reflection</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">reflection</span> <span class="o">=</span> <span class="nx">reflection</span> <span class="o">||</span> <span class="k">this</span><span class="p">.</span><span class="nx">reflection</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">attributes</span> <span class="o">=</span> <span class="p">{};</span>
+    
+    <span class="k">if</span> <span class="p">(</span><span class="nx">reflection</span><span class="p">.</span><span class="nx">macro</span> <span class="o">==</span> <span class="s1">&#39;belongs_to&#39;</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">attributes</span><span class="p">[</span><span class="nx">reflection</span><span class="p">.</span><span class="nx">primaryKey</span><span class="p">()]</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">owner</span><span class="p">[</span><span class="nx">reflection</span><span class="p">.</span><span class="nx">foreignKey</span><span class="p">()];</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="nx">attributes</span><span class="p">[</span><span class="nx">reflection</span><span class="p">.</span><span class="nx">foreignKey</span><span class="p">()]</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">owner</span><span class="p">[</span><span class="nx">reflection</span><span class="p">.</span><span class="nx">primaryKey</span><span class="p">()];</span>
+    <span class="p">}</span>
+    
+    <span class="k">return</span> <span class="nx">attributes</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="nx">Association</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">constructOwnerConditions</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">table</span><span class="p">,</span> <span class="nx">reflection</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">table</span> <span class="o">=</span> <span class="nx">table</span> <span class="o">||</span> <span class="k">this</span><span class="p">.</span><span class="nx">targetKlass</span><span class="p">().</span><span class="nx">table</span><span class="p">();</span>
+    <span class="nx">reflection</span> <span class="o">=</span> <span class="nx">reflection</span> <span class="o">||</span> <span class="k">this</span><span class="p">.</span><span class="nx">reflection</span><span class="p">;</span>
+    
+    <span class="kd">var</span> <span class="nx">conditions</span> <span class="o">=</span> <span class="nx">_</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">constructOwnerAttributes</span><span class="p">(</span><span class="nx">reflection</span><span class="p">),</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">,</span> <span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">column</span><span class="p">(</span><span class="nx">key</span><span class="p">).</span><span class="nx">eq</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+    <span class="p">});</span>
+    
+    <span class="k">return</span> <span class="nx">table</span><span class="p">.</span><span class="nx">createAnd</span><span class="p">(</span><span class="nx">conditions</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="nx">Association</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">constructScope</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">targetKlass</span><span class="p">())</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">_association_scope</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">associationScope</span><span class="p">();</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 

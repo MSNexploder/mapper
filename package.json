@@ -1,0 +1,27 @@
+// https://github.com/assaf/zombie/blob/master/package.json
+
+{
+  "name": "mapper",
+  "description": "A database-agnostic, event-driven object-relational mapper",
+  "keywords": [ "mapper", "database", "mysql", "sqlite", "or-mapper", "object relational mapper", "orm" ],
+  "version": "0.0.1pre",
+  "author": "Stefan Huber <MSNexploder@gmail.com>",
+  "main": "mapper",
+  "modules": {
+      "visitors": "./lib/mapper/visitors",
+      "managers": "./lib/mapper/managers",
+      "nodes": "./lib/mapper/nodes",
+      "connection_adapters": "./lib/mapper/connection_adapters",
+      "base": "./lib/mapper/base"
+  },
+  "directories": {
+    "doc":"./doc",
+    "lib":"./lib"
+  },
+  "engines": {
+    "node": ">=0.4.2 <0.5.0"
+  },
+  "dependencies": {
+    "underscore": ">=1.1.4 <2.0.0"
+  }
+}
